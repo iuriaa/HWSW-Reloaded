@@ -37,12 +37,12 @@ entity cmd_velocity_i2c is
 					 clk       : IN     STD_LOGIC;                    --system clock
 					 reset  	  : IN     STD_LOGIC;                    --active low reset
 					 sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
-					 scl       : INOUT  STD_LOGIC;                   --serial clock output of i2c bus
-					 leds		  : OUT	  STD_LOGIC_VECTOR (7 DOWNTO 0);
-					 switches  : IN	  STD_LOGIC_VECTOR (7 DOWNTO 0);
-					 start	  : IN	  STD_LOGIC;
-					 stop		  : IN	  STD_LOGIC
-					 --start	  : IN	STD_LOGIC
+					 scl       : INOUT  STD_LOGIC;                    --serial clock output of i2c bus
+					 trigger	  : IN	  STD_LOGIC;
+					 speed_L	  : IN	  STD_LOGIC_VECTOR (12 DOWNTO 0);
+					 speed_R	  : IN	  STD_LOGIC_VECTOR (12 DOWNTO 0);
+					 L_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0);
+					 R_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0)
 					);
 end cmd_velocity_i2c;
 
@@ -52,17 +52,16 @@ architecture Behavioral of cmd_velocity_i2c is
 	signal rw : STD_LOGIC := '1';
 	signal data_wr : STD_LOGIC_VECTOR(7 DOWNTO 0) := (others => '0');
 	signal busy : STD_LOGIC;
-	signal data_rd : STD_LOGIC_VECTOR(7 DOWNTO 0);
 	signal ack_error : STD_LOGIC;
-	constant addr_motor1 : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"26";--001001110010100000101001";
-	constant addr_motor2 : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"3A";--001110110011110000111101";
+	constant addr_motor1 : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"26";
+	constant addr_motor2 : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"3A";
 	signal busy_prev : STD_LOGIC := '0';
-	signal speed : STD_LOGIC_VECTOR(15 DOWNTO 0) := (others => '0');
+	signal data_rd : STD_LOGIC_VECTOR(7 DOWNTO 0);
 	
 	TYPE state_type IS (idle, get_data);
 	signal state : state_type := idle;
 	
-	--where all the 'work' is done: quadraturedecoder.vhd
+	--where all the 'work' is done: i2c_master.vhd
 	component i2c_master
     		Port (
 					 clk       : IN     STD_LOGIC;                    --system clock
@@ -79,9 +78,9 @@ architecture Behavioral of cmd_velocity_i2c is
     			);
 	end component;
 
-	begin --architecture QuadratureCounter		 
+	begin --architecture QuadratureCounter
 
-	--instanciate the decoder
+	--instanciate the i2c
 		i2ccomponent: i2c_master 
 		port map	( 
 						clk => clk,
@@ -96,10 +95,14 @@ architecture Behavioral of cmd_velocity_i2c is
 						sda => sda,
 						scl => scl
 					);
-
+					
     -- Control Logic
     p_ctrl : process(reset,clk) is
-        variable busy_cnt : integer range 0 to 41;
+        variable busy_cnt : integer range 0 to 38;
+		  variable addr_R_low : STD_LOGIC_VECTOR (7 DOWNTO 0);
+		  variable addr_R_high : STD_LOGIC_VECTOR (7 DOWNTO 0);
+		  variable addr_L_low : STD_LOGIC_VECTOR (7 DOWNTO 0);
+		  variable addr_L_high : STD_LOGIC_VECTOR (7 DOWNTO 0);
     begin
         if reset = '1' then
             state <= idle;
@@ -107,21 +110,43 @@ architecture Behavioral of cmd_velocity_i2c is
             data_wr <= (others => '0');
             enable <= '0';
             rw <= '1';
-				leds <= x"00";
         elsif (clk'event and clk = '1') then
             enable <= '0';  -- default power-down
             rw <= '0';
             case state is
 					 when idle =>
-						  if (start = '1') then
+						  if (trigger = '1') then
 								busy_cnt := 0;                          -- reset busy_cnt for next transaction
-								leds <= x"00";
-								speed <= x"07FF";
-								state <= get_data;
-						  elsif (stop = '1') then
-								busy_cnt := 0;                          -- reset busy_cnt for next transaction
-								leds <= x"00";
-								speed <= x"0000";
+								case R_fw_bw is
+									when "00" =>
+										addr_R_low := x"2A";		-- IN2 for motor 1
+										addr_R_high := x"2E";	-- IN1 for motor 1
+									when "01" =>
+										addr_R_low := x"2A";		-- IN2 for motor 1
+										addr_R_high := x"2E";	-- IN1 for motor 1
+									when "10" =>
+										addr_R_low := x"2E";		-- IN1 for motor 1
+										addr_R_high := x"2A";	-- IN2 for motor 1
+									when "11" =>
+										addr_R_low := x"2A";		-- IN2 for motor 1
+										addr_R_high := x"2E";	-- IN1 for motor 1
+									when others => NULL;
+								end case;	
+								case L_fw_bw is
+									when "00" =>
+										addr_L_low := x"36";		-- IN2 for motor 1
+										addr_L_high := x"32";	-- IN1 for motor 1
+									when "01" =>
+										addr_L_low := x"36";		-- IN2 for motor 1
+										addr_L_high := x"32";	-- IN1 for motor 1
+									when "10" =>
+										addr_L_low := x"32";		-- IN1 for motor 1
+										addr_L_high := x"36";	-- IN2 for motor 1
+									when "11" =>
+										addr_L_low := x"36";		-- IN2 for motor 1
+										addr_L_high := x"32";	-- IN1 for motor 1
+									when others => NULL;
+								end case;	
 								state <= get_data;
 						  end if;
 					 when get_data =>
@@ -135,56 +160,47 @@ architecture Behavioral of cmd_velocity_i2c is
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"00";
 								when 1 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"20"; --enable internal clock and AI
-									 leds <= x"01";
 								when 2 =>
 									 enable <= '0';
 									 if busy='0' then
                                 busy_cnt := busy_cnt + 1;
                             end if;
-									 leds <= x"02";
 								-- Set speed for motor1 - LED8
 								when 3 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= addr_motor1;
-									 leds <= x"03";
 								when 4 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= speed(7 DOWNTO 0);
-									 leds <= x"04";
+									 data_wr <= speed_R(7 DOWNTO 0);
 								when 5 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= speed(15 DOWNTO 8);
-									 leds <= x"05";
+									 data_wr(4 DOWNTO 0) <= speed_R(12 DOWNTO 8);
+									 data_wr(7 DOWNTO 5) <= (others => '0');
 								when 6 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"06";
 								when 7 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"07";
 								when 8 =>
 									 enable <= '0';
 									 if busy='0' then
                                 busy_cnt := busy_cnt + 1;
                             end if;
-									 leds <= x"08";
-								-- Set LED9 In2 to LOW
+								-- Set IN LOW
 								when 9 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"2A";
-									 leds <= x"09";
+									 data_wr <= addr_R_low;
 								when 10 =>
 									 enable <= '1';
 									 rw <= '0';
@@ -193,93 +209,81 @@ architecture Behavioral of cmd_velocity_i2c is
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"0A";
 								when 12 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"0B";
 								when 13 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"0C";
 								when 14 =>
 									 enable <= '0';
 									 if busy='0' then
                                 busy_cnt := busy_cnt + 1;
                             end if;
-									 leds <= x"0D";
-								-- Set LED10 In1 to HIGH
+								-- Set IN HIGH
 								when 15 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"2E";
-									 leds <= x"0E";
+									 data_wr <= addr_R_high;
 								when 16 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"0F";
 								when 17 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"10";
-									 leds <= x"10";
+									 if ((R_fw_bw = "00") or (R_fw_bw = "11")) then
+											data_wr <= x"00";
+									 else
+											data_wr <= x"10";
+									 end if;
 								when 18 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"11";
 								when 19 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"12";
 								when 20 =>
 									 enable <= '0';
 									 if busy='0' then
                                 busy_cnt := busy_cnt + 1;
                             end if;
-									 leds <= x"13";
 								-- Set speed for motor2 - LED13
 								when 21 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= addr_motor2;
-									 leds <= x"03";
 								when 22 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= speed(7 DOWNTO 0);
-									 leds <= x"04";
+									 data_wr <= speed_L(7 DOWNTO 0);
 								when 23 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= speed(15 DOWNTO 8);
-									 leds <= x"05";
+									 data_wr(4 DOWNTO 0) <= speed_L(12 DOWNTO 8);
+									 data_wr(7 DOWNTO 5) <= (others => '0');
 								when 24 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"06";
 								when 25 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"07";
 								when 26 =>
 									 enable <= '0';
 									 if busy='0' then
                                 busy_cnt := busy_cnt + 1;
                             end if;
-									 leds <= x"08";
-								-- Set LED12 In2 to LOW
+								-- Set IN LOW
 								when 27 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"36";
-									 leds <= x"09";
+									 data_wr <= addr_L_low;
 								when 28 =>
 									 enable <= '1';
 									 rw <= '0';
@@ -288,73 +292,49 @@ architecture Behavioral of cmd_velocity_i2c is
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"0A";
 								when 30 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"0B";
 								when 31 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"0C";
 								when 32 =>
 									 enable <= '0';
 									 if busy='0' then
                                 busy_cnt := busy_cnt + 1;
                             end if;
-									 leds <= x"0D";
-								-- Set LED11 In1 to HIGH
+								-- Set IN HIGH
 								when 33 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"32";
-									 leds <= x"32";
+									 data_wr <= addr_L_high;
 								when 34 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"0F";
 								when 35 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"10";
-									 leds <= x"10";
+									 if ((L_fw_bw = "00") or (L_fw_bw = "11")) then
+											data_wr <= x"00";
+									 else
+											data_wr <= x"10";
+									 end if;
 								when 36 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"11";
 								when 37 =>
 									 enable <= '1';
 									 rw <= '0';
 									 data_wr <= x"00";
-									 leds <= x"12";
 								when 38 =>
 									 enable <= '0';
-									 if busy='0' then
-                                busy_cnt := busy_cnt + 1;
-                            end if;
-									 leds <= x"13";
-								-- read register with addr according to switches
-								when 39 =>
-									 enable <= '1';
-									 rw <= '0';
-									 data_wr <= switches;
-								when 40 =>
-									 enable <= '1';
-									 rw <= '1';
-									 leds <= data_rd;
-								when 41 =>
-									 enable <= '0';
-									 rw <= '1';
-									 leds <= data_rd;
-									 --leds(7) <= ack_error;
-									 if (start = '0') then
+									 if (trigger = '0') then
 											state <= idle;
 									 end if;
-									 --leds(6 DOWNTO 0) <= "0010100";
 								when others => null;
 						  end case;
 					 when others => null;
@@ -362,4 +342,3 @@ architecture Behavioral of cmd_velocity_i2c is
         end if;
     end process;
 end Behavioral;
-
