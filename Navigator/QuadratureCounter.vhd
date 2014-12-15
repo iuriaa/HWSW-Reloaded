@@ -17,6 +17,7 @@ use IEEE.STD_LOGIC_SIGNED.ALL;
 --How we 'talk' to the outside world:
 entity QuadratureCounterPorts is
     Port ( clock : in std_logic;	--system clock, i.e. 10MHz oscillator
+   	 reset : in std_logic;	--counter reset
 		 QuadA : in std_logic;	--first input from quadrature device  (i.e. optical disk encoder)
 		 QuadB : in std_logic;	--second input from quadrature device (i.e. optical disk encoder)
 		 CounterValue : out std_logic_vector(15 downto 0) --just an example debuggin output
@@ -73,12 +74,13 @@ architecture QuadratureCounter of QuadratureCounterPorts is
 
 
 	-- do our actual work every clock cycle
-	process(clock, Count)
+	process(clock, reset, Count)
 	begin
 
 		--keep track of the counter
-		if ( (clock'event) and (clock = '1') ) then
-		
+		if reset = '1' then 
+			Count <= (OTHERS => '0');
+		elsif ( (clock'event) and (clock = '1') ) then
 			if (CountEnable = '1') then
 
 				if (CountDirection = '1') then Count <= Count + "0000000000000001"; end if;

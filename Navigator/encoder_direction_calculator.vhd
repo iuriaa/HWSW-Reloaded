@@ -35,6 +35,7 @@ entity encoder_direction_calculator is
 			  channels_L : in  STD_LOGIC_VECTOR(1 DOWNTO 0);
 			  switch0 : in STD_LOGIC; -- switch sw0
 			  switch1 : in STD_LOGIC; -- switch sw1
+			  reset : in STD_LOGIC;
 			  clk : in STD_LOGIC;
 			  anodes : out STD_LOGIC_VECTOR (3 DOWNTO 0);
 			  sseg : out STD_LOGIC_VECTOR (7 DOWNTO 0);
@@ -77,6 +78,7 @@ end ssg_decode;
 component QuadratureCounterPorts
   		Port (
      			clock     : in    std_logic;
+				reset     : in    std_logic;
      			QuadA     : in    std_logic;
      			QuadB     : in    std_logic;
 				CounterValue : out std_logic_vector(15 downto 0)
@@ -89,6 +91,7 @@ end component;
 		--instanciate the decoder
 		LQuadratureCounter: QuadratureCounterPorts 
 		port map	(
+		   reset => reset,
  			clock => clk,
 	   	QuadA => channels_R(0),
  	   	QuadB => channels_R(1),
@@ -97,11 +100,19 @@ end component;
 		
 		RQuadratureCounter: QuadratureCounterPorts 
 		port map	(
+		   reset => reset,
  			clock => clk,
 	   	QuadA => channels_L(0),
  	   	QuadB => channels_L(1),
     		CounterValue => counter_L
 		);
+		
+		process (clk, reset)
+		   begin
+			if reset = '1' then
+			elsif (clk'event and clk = '1') then
+			end if;
+	   end process;
 		
 		process (clk, switch0)
 			begin

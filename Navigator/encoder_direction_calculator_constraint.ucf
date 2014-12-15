@@ -21,3 +21,4 @@ NET "sseg[6]" LOC = H14;
 NET "sseg[7]" LOC = C17;
 NET "switch0" LOC = G18;
 NET "switch1" LOC = H18;
+NET "reset" LOC = B18;
