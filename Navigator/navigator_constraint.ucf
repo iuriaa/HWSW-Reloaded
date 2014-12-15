@@ -1,0 +1,14 @@
+NET "clk" LOC = B8; # Clock signal
+NET "reset" CLOCK_DEDICATED_ROUTE = FALSE;
+NET "reset" LOC = B18;
+NET "state_selector[0]"       LOC = G18;   # Sch name = SW0
+NET "state_selector[1]"       LOC = H18;   # Sch name = SW1
+NET "state_selector[2]"       LOC = K18;   # Sch name = SW2
+
+NET "speed_prescalar[0]"       LOC = K17;   # Sch name = SW3
+NET "speed_prescalar[1]"       LOC = L14;   # Sch name = SW4
+NET "speed_prescalar[2]"       LOC = L13;   # Sch name = SW5
+NET "speed_prescalar[3]"       LOC = N17;   # Sch name = SW6
+
+NET "sda" LOC = T17; #JB1 pin 4
+NET "scl" LOC = R15; #JB1 pin 3
