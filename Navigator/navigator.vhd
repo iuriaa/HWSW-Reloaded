@@ -38,7 +38,12 @@ entity navigator is
 			  sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
 			  scl       : INOUT  STD_LOGIC;                    --serial clock output of i2c bus
            state_selector : in  STD_LOGIC_VECTOR (2 downto 0);
-           speed_prescalar : in  STD_LOGIC_VECTOR (3 downto 0)
+           speed_prescalar : in  STD_LOGIC_VECTOR (3 downto 0);
+			  left_right_encoder : in  STD_LOGIC;
+			  channels_L : in STD_LOGIC_VECTOR (1 DOWNTO 0);
+			  channels_R : in STD_LOGIC_VECTOR (1 DOWNTO 0);
+			  ext_anodes : out STD_LOGIC_VECTOR (3 DOWNTO 0);
+			  ext_sseg : out STD_LOGIC_VECTOR (7 DOWNTO 0)
 			  );
 end navigator;
 
@@ -49,6 +54,8 @@ architecture Behavioral of navigator is
 	CONSTANT MAX_SPEED : STD_LOGIC_VECTOR(11 downto 0):= x"7FF";
 	SIGNAL state_left_wheel, state_right_wheel : STD_LOGIC_VECTOR(1 downto 0):= (OTHERS => '0');
 	SIGNAL trigger_cmd_vel : STD_LOGIC:= '0';
+	SIGNAL anodes : STD_LOGIC_VECTOR (3 DOWNTO 0);
+	SIGNAL sseg : STD_LOGIC_VECTOR (7 DOWNTO 0);
 
 	component cmd_velocity_i2c
 				Port (
@@ -63,9 +70,34 @@ architecture Behavioral of navigator is
 						 R_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0)
 						);
 	end component;
+	
+	component encoder_direction_calculator
+				Port ( 
+						 channels_R : in  STD_LOGIC_VECTOR(1 DOWNTO 0);
+						 channels_L : in  STD_LOGIC_VECTOR(1 DOWNTO 0);
+						 on_off : in STD_LOGIC; -- switch sw0
+						 left_right_enc : in STD_LOGIC; -- switch sw1
+						 reset : in STD_LOGIC;
+						 clk : in STD_LOGIC;
+						 anodes : out STD_LOGIC_VECTOR (3 DOWNTO 0);
+						 sseg : out STD_LOGIC_VECTOR (7 DOWNTO 0)
+						);
+	end component;
 
 begin
-
+		--instanciate the encoder component
+		iEncoderCounter : encoder_direction_calculator
+		port map (
+						 channels_R => channels_R,
+						 channels_L => channels_L,
+						 on_off => '1', -- switch sw0
+						 left_right_enc => left_right_encoder, -- switch sw1
+						 reset => reset,
+						 clk => clk,
+						 anodes => anodes,
+						 sseg => sseg
+					 );
+		
 		--instanciate the i2c
 		cmdvelocityi2c: cmd_velocity_i2c 
 		port map	(
@@ -94,7 +126,10 @@ begin
 				  end if;
 			end if;
 	end process;
-
+	
+	ext_anodes <= anodes;
+	ext_sseg <= sseg;
+	
    next_state_logic : PROCESS(reset, clk)
 		begin
 			if reset = '1' then
