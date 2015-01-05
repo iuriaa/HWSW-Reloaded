@@ -12,3 +12,26 @@ NET "speed_prescalar[3]"       LOC = N17;   # Sch name = SW6
 
 NET "sda" LOC = T17; #JB1 pin 4
 NET "scl" LOC = R15; #JB1 pin 3
+
+NET "channels_L[0]" LOC = L17; #JA3
+NET "channels_L[1]" LOC = M15; #JA4
+NET "channels_R[0]" LOC = M14; #JA9
+NET "channels_R[1]" LOC = M16; #JA10
+#NET "leds[0]" LOC = P4; #LD7
+#NET "leds[1]" LOC = E4; #LD6
+#NET "leds[2]" LOC = P16; #LD5
+#NET "leds[3]" LOC = E16; #LD4
+NET "ext_anodes[0]" LOC = F17;
+NET "ext_anodes[1]" LOC = H17;
+NET "ext_anodes[2]" LOC = C18;
+NET "ext_anodes[3]" LOC = F15;
+NET "ext_sseg[0]" LOC = L18;
+NET "ext_sseg[1]" LOC = F18;
+NET "ext_sseg[2]" LOC = D17;
+NET "ext_sseg[3]" LOC = D16;
+NET "ext_sseg[4]" LOC = G14;
+NET "ext_sseg[5]" LOC = J17;
+NET "ext_sseg[6]" LOC = H14;
+NET "ext_sseg[7]" LOC = C17;
+NET "left_right_encoder" LOC = R17;
+#NET "switch1" LOC = H18;

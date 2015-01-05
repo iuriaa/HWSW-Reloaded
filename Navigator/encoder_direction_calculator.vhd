@@ -33,13 +33,12 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 entity encoder_direction_calculator is
     Port ( channels_R : in  STD_LOGIC_VECTOR(1 DOWNTO 0);
 			  channels_L : in  STD_LOGIC_VECTOR(1 DOWNTO 0);
-			  switch0 : in STD_LOGIC; -- switch sw0
-			  switch1 : in STD_LOGIC; -- switch sw1
+			  on_off : in STD_LOGIC; -- switch sw0
+			  left_right_enc : in STD_LOGIC; -- switch sw1
 			  reset : in STD_LOGIC;
 			  clk : in STD_LOGIC;
 			  anodes : out STD_LOGIC_VECTOR (3 DOWNTO 0);
-			  sseg : out STD_LOGIC_VECTOR (7 DOWNTO 0);
-			  leds : out STD_LOGIC_VECTOR (3 DOWNTO 0));
+			  sseg : out STD_LOGIC_VECTOR (7 DOWNTO 0));
 end encoder_direction_calculator;
 
 architecture SpeedCalculator of encoder_direction_calculator is
@@ -86,8 +85,6 @@ component QuadratureCounterPorts
 end component;
 
 	begin
-		leds(1 DOWNTO 0) <= channels_R;
-		leds(3 DOWNTO 2) <= channels_L;
 		--instanciate the decoder
 		LQuadratureCounter: QuadratureCounterPorts 
 		port map	(
@@ -114,14 +111,14 @@ end component;
 			end if;
 	   end process;
 		
-		process (clk, switch0)
+		process (clk, on_off)
 			begin
 				-- sseg on/off by switch sw0
-				if switch0 = '1' then
+				if on_off = '1' then
 					if (clk'event and clk = '1') then
 						prescaler_counter <= prescaler_counter + 1;
 						if(prescaler_counter = prescaler) then
-							if switch1 = '1' then
+							if left_right_enc = '1' then
 								case anode_r is
 									when "00" =>
 										ssg_decode(hexcode => counter_R(3 DOWNTO 0), ssg_out => sseg);

@@ -48,6 +48,10 @@ architecture QuadratureCounter of QuadratureCounterPorts is
 	
 	--should we increment or decrement count?
 	signal CountDirection : std_logic;
+	
+	signal PrescaleCounter : std_logic_vector(25 downto 0) := (others =>'0');
+	
+	constant PrescalerSecond : std_logic_vector(25 downto 0) := "10111110101111000010000000"; --50_000_000
 
 	--where all the 'work' is done: quadraturedecoder.vhd
 	component QuadratureDecoderPorts
@@ -81,8 +85,14 @@ architecture QuadratureCounter of QuadratureCounterPorts is
 		if reset = '1' then 
 			Count <= (OTHERS => '0');
 		elsif ( (clock'event) and (clock = '1') ) then
+			PrescaleCounter <= PrescaleCounter + 1;
+			if (PrescaleCounter = PrescalerSecond) then
+				PrescaleCounter <= (others => '0'); 
+				CounterValue <= Count;
+				Count <= (others => '0');
+			end if;
 			if (CountEnable = '1') then
-
+				
 				if (CountDirection = '1') then Count <= Count + "0000000000000001"; end if;
 				if (CountDirection = '0') then Count <= Count - "0000000000000001"; end if;
 
@@ -95,7 +105,7 @@ architecture QuadratureCounter of QuadratureCounterPorts is
 		--for instance, I will just output the value of the counter
 		--led's on an output like this are very useful - you can see the top
 		--bits light when moved backwards from initial position (count goes negative)
-		CounterValue <= Count;
+		--CounterValue <= Count;
 
 	end process; --(clock)
 				   			  					
