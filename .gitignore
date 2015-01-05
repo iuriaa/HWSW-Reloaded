@@ -5,6 +5,7 @@
 !.gitignore
 !*.vhd
 !*.ucf
+!*.bit
 
 # ...even if they are in subdirectories
 !*/

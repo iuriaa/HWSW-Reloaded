@@ -39,8 +39,8 @@ entity cmd_velocity_i2c is
 					 sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
 					 scl       : INOUT  STD_LOGIC;                    --serial clock output of i2c bus
 					 trigger	  : IN	  STD_LOGIC;
-					 speed_L	  : IN	  STD_LOGIC_VECTOR (12 DOWNTO 0);
-					 speed_R	  : IN	  STD_LOGIC_VECTOR (12 DOWNTO 0);
+					 speed_L	  : IN	  STD_LOGIC_VECTOR (11 DOWNTO 0);
+					 speed_R	  : IN	  STD_LOGIC_VECTOR (11 DOWNTO 0);
 					 L_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0);
 					 R_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0)
 					);
@@ -177,20 +177,20 @@ architecture Behavioral of cmd_velocity_i2c is
 								when 4 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= speed_R(7 DOWNTO 0);
+									 data_wr <= x"00";
 								when 5 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr(4 DOWNTO 0) <= speed_R(12 DOWNTO 8);
-									 data_wr(7 DOWNTO 5) <= (others => '0');
+									 data_wr <= x"00";
 								when 6 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"00";
+									 data_wr <= speed_R(7 DOWNTO 0);
 								when 7 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"00";
+									 data_wr(3 DOWNTO 0) <= speed_R(11 DOWNTO 8);
+									 data_wr(7 DOWNTO 4) <= (others => '0');
 								when 8 =>
 									 enable <= '0';
 									 if busy='0' then
@@ -260,20 +260,20 @@ architecture Behavioral of cmd_velocity_i2c is
 								when 22 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= speed_L(7 DOWNTO 0);
+									 data_wr <= x"00";
 								when 23 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr(4 DOWNTO 0) <= speed_L(12 DOWNTO 8);
-									 data_wr(7 DOWNTO 5) <= (others => '0');
+									 data_wr <= x"00";
 								when 24 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"00";
+									 data_wr <= speed_L(7 DOWNTO 0);
 								when 25 =>
 									 enable <= '1';
 									 rw <= '0';
-									 data_wr <= x"00";
+									 data_wr(3 DOWNTO 0) <= speed_L(11 DOWNTO 8);
+									 data_wr(7 DOWNTO 4) <= (others => '0');
 								when 26 =>
 									 enable <= '0';
 									 if busy='0' then

@@ -45,8 +45,8 @@ end navigator;
 architecture Behavioral of navigator is
 	TYPE state_type IS (stop, forward, backward, rotate_R, rotate_L); -- declaring enumeration
 	SIGNAL state, next_state, current_state: state_type;
-	SIGNAL speed_l, speed_r: STD_LOGIC_VECTOR(12 downto 0):= (OTHERS => '0');
-	CONSTANT MAX_SPEED : STD_LOGIC_VECTOR(12 downto 0):= "0000000001000";
+	SIGNAL speed_l, speed_r: STD_LOGIC_VECTOR(11 downto 0):= (OTHERS => '0');
+	CONSTANT MAX_SPEED : STD_LOGIC_VECTOR(11 downto 0):= x"7FF";
 	SIGNAL state_left_wheel, state_right_wheel : STD_LOGIC_VECTOR(1 downto 0):= (OTHERS => '0');
 	SIGNAL trigger_cmd_vel : STD_LOGIC:= '0';
 
@@ -57,8 +57,8 @@ architecture Behavioral of navigator is
 						 sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
 						 scl       : INOUT  STD_LOGIC;                    --serial clock output of i2c bus
 						 trigger	  : IN	  STD_LOGIC;
-						 speed_L	  : IN	  STD_LOGIC_VECTOR (12 DOWNTO 0);
-						 speed_R	  : IN	  STD_LOGIC_VECTOR (12 DOWNTO 0);
+						 speed_L	  : IN	  STD_LOGIC_VECTOR (11 DOWNTO 0);
+						 speed_R	  : IN	  STD_LOGIC_VECTOR (11 DOWNTO 0);
 						 L_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0);
 						 R_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0)
 						);
@@ -120,9 +120,11 @@ begin
 			if reset = '1' then
 				speed_l <= (OTHERS => '0');
 				speed_r <= (OTHERS => '0');
+				state_left_wheel <= "00";
+				state_right_wheel <= "00";
 			else
-				speed_l <= MAX_SPEED;
-				speed_r <= MAX_SPEED;
+				speed_l <= (OTHERS => '0');
+				speed_r <= (OTHERS => '0');
 				case current_state is
 					when stop =>
 						state_left_wheel <= "00";
@@ -130,15 +132,25 @@ begin
 					when forward =>
 						state_left_wheel <= "01";
 						state_right_wheel <= "01";
+						speed_l(11 DOWNTO 8) <= speed_prescalar;
+						speed_r(11 DOWNTO 8) <= speed_prescalar;
+						speed_l(7 DOWNTO 0) <= x"FF";
+						speed_r(7 DOWNTO 0) <= x"FF";
 					when backward =>
 						state_left_wheel <= "10";
 						state_right_wheel <= "10";
+						speed_l <= MAX_SPEED;
+						speed_r <= MAX_SPEED;
 					when rotate_R =>
 						state_left_wheel <= "01";
 						state_right_wheel <= "10";
+						speed_l <= MAX_SPEED;
+						speed_r <= MAX_SPEED;
 					when rotate_L =>
 						state_left_wheel <= "10";
 						state_right_wheel <= "01";
+						speed_l <= MAX_SPEED;
+						speed_r <= MAX_SPEED;
 				end case;
 			 end if;
 	end process;
