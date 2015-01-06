@@ -137,9 +137,9 @@ begin
 			elsif clk'event and clk = '1' then
 				CASE state_selector IS
 					when "100" => 
-						next_state <= backward;
-					when "101" => 
 						next_state <= forward;
+					when "101" => 
+						next_state <= backward;
 					when "110" => 
 						next_state <= rotate_R;
 					when "111" => 
@@ -174,18 +174,24 @@ begin
 					when backward =>
 						state_left_wheel <= "10";
 						state_right_wheel <= "10";
-						speed_l <= MAX_SPEED;
-						speed_r <= MAX_SPEED;
+						speed_l(11 DOWNTO 8) <= speed_prescalar;
+						speed_r(11 DOWNTO 8) <= speed_prescalar;
+						speed_l(7 DOWNTO 0) <= x"FF";
+						speed_r(7 DOWNTO 0) <= x"FF";
 					when rotate_R =>
 						state_left_wheel <= "01";
 						state_right_wheel <= "10";
-						speed_l <= MAX_SPEED;
-						speed_r <= MAX_SPEED;
+						speed_l(11 DOWNTO 8) <= speed_prescalar;
+						speed_r(11 DOWNTO 8) <= speed_prescalar;
+						speed_l(7 DOWNTO 0) <= x"FF";
+						speed_r(7 DOWNTO 0) <= x"FF";
 					when rotate_L =>
 						state_left_wheel <= "10";
 						state_right_wheel <= "01";
-						speed_l <= MAX_SPEED;
-						speed_r <= MAX_SPEED;
+						speed_l(11 DOWNTO 8) <= speed_prescalar;
+						speed_r(11 DOWNTO 8) <= speed_prescalar;
+						speed_l(7 DOWNTO 0) <= x"FF";
+						speed_r(7 DOWNTO 0) <= x"FF";
 				end case;
 			 end if;
 	end process;
