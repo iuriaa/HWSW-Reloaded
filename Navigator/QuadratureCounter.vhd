@@ -15,17 +15,17 @@ use IEEE.STD_LOGIC_SIGNED.ALL;
 --origonally compiled/synthesized with Xilinx 'Webpack' 5.2 software
 
 --How we 'talk' to the outside world:
-entity QuadratureCounterPorts is
+entity TicksPerSecCounter is
     Port ( clock : in std_logic;	--system clock, i.e. 10MHz oscillator
    	 reset : in std_logic;	--counter reset
 		 QuadA : in std_logic;	--first input from quadrature device  (i.e. optical disk encoder)
 		 QuadB : in std_logic;	--second input from quadrature device (i.e. optical disk encoder)
-		 CounterValue : out std_logic_vector(15 downto 0) --just an example debuggin output
+		 CountsPerSec : out std_logic_vector(15 downto 0) --just an example debuggin output
 		);
-end QuadratureCounterPorts;
+end TicksPerSecCounter;
 
 --What we 'do':
-architecture QuadratureCounter of QuadratureCounterPorts is
+architecture QuadratureCounter of TicksPerSecCounter is
 
 	-- local 'variables' or 'registers'
 	
@@ -88,7 +88,7 @@ architecture QuadratureCounter of QuadratureCounterPorts is
 			PrescaleCounter <= PrescaleCounter + 1;
 			if (PrescaleCounter = PrescalerSecond) then
 				PrescaleCounter <= (others => '0'); 
-				CounterValue <= Count;
+				CountsPerSec <= Count;
 				Count <= (others => '0');
 			end if;
 			if (CountEnable = '1') then
@@ -105,7 +105,7 @@ architecture QuadratureCounter of QuadratureCounterPorts is
 		--for instance, I will just output the value of the counter
 		--led's on an output like this are very useful - you can see the top
 		--bits light when moved backwards from initial position (count goes negative)
-		--CounterValue <= Count;
+		--CountsPerSec <= Count;
 
 	end process; --(clock)
 				   			  					

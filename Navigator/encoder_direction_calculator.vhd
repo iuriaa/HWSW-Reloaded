@@ -74,42 +74,35 @@ procedure ssg_decode(signal hexcode : in STD_LOGIC_VECTOR (3 DOWNTO 0);
 	ssg_out(7) <= '1'; -- Disable dot
 end ssg_decode;
 
-component QuadratureCounterPorts
+component QuadratureCountsPerSec
   		Port (
      			clock     : in    std_logic;
 				reset     : in    std_logic;
      			QuadA     : in    std_logic;
      			QuadB     : in    std_logic;
-				CounterValue : out std_logic_vector(15 downto 0)
+				CountsPerSec : out std_logic_vector(15 downto 0)
 				);
 end component;
 
 	begin
 		--instanciate the decoder
-		LQuadratureCounter: QuadratureCounterPorts 
+		LMotorSpeed: TicksPerSecCounter 
 		port map	(
 		   reset => reset,
  			clock => clk,
 	   	QuadA => channels_R(0),
  	   	QuadB => channels_R(1),
-    		CounterValue => counter_R
+    		CountsPerSec => counter_R
 		);
 		
-		RQuadratureCounter: QuadratureCounterPorts 
+		RMotorSpeed: TicksPerSecCounter 
 		port map	(
 		   reset => reset,
  			clock => clk,
 	   	QuadA => channels_L(0),
  	   	QuadB => channels_L(1),
-    		CounterValue => counter_L
+    		CountsPerSec => counter_L
 		);
-		
-		process (clk, reset)
-		   begin
-			if reset = '1' then
-			elsif (clk'event and clk = '1') then
-			end if;
-	   end process;
 		
 		process (clk, on_off)
 			begin

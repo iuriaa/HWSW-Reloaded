@@ -56,6 +56,7 @@ architecture Behavioral of navigator is
 	SIGNAL trigger_cmd_vel : STD_LOGIC:= '0';
 	SIGNAL anodes : STD_LOGIC_VECTOR (3 DOWNTO 0);
 	SIGNAL sseg : STD_LOGIC_VECTOR (7 DOWNTO 0);
+	SIGNAL valueToDisplay, counter_L, counter_R : STD_LOGIC_VECTOR (15 DOWNTO 0) := (OTHERS => '0');
 
 	component cmd_velocity_i2c
 				Port (
@@ -71,32 +72,59 @@ architecture Behavioral of navigator is
 						);
 	end component;
 	
-	component encoder_direction_calculator
-				Port ( 
-						 channels_R : in  STD_LOGIC_VECTOR(1 DOWNTO 0);
-						 channels_L : in  STD_LOGIC_VECTOR(1 DOWNTO 0);
-						 on_off : in STD_LOGIC; -- switch sw0
-						 left_right_enc : in STD_LOGIC; -- switch sw1
-						 reset : in STD_LOGIC;
-						 clk : in STD_LOGIC;
-						 anodes : out STD_LOGIC_VECTOR (3 DOWNTO 0);
-						 sseg : out STD_LOGIC_VECTOR (7 DOWNTO 0)
-						);
+	component TicksPerSecCounter
+			Port (
+					clock     : in    std_logic;
+					reset     : in    std_logic;
+					QuadA     : in    std_logic;
+					QuadB     : in    std_logic;
+					CountsPerSec : out std_logic_vector(15 downto 0)
+					);
 	end component;
 
+	component display
+			Port (
+					on_off : in STD_LOGIC; -- switch sw0
+					valueToDisplay : in STD_LOGIC_VECTOR (15 DOWNTO 0);
+					dotsOnOff : in STD_LOGIC_VECTOR (3 DOWNTO 0);
+					reset : in STD_LOGIC;
+					clk : in STD_LOGIC;
+					anodes : out STD_LOGIC_VECTOR (3 DOWNTO 0);
+					sseg : out STD_LOGIC_VECTOR (7 DOWNTO 0)
+					);
+	end component;
+	
 begin
-		--instanciate the encoder component
-		iEncoderCounter : encoder_direction_calculator
+		displayer: display		
 		port map (
-						 channels_R => channels_R,
-						 channels_L => channels_L,
-						 on_off => '1', -- switch sw0
-						 left_right_enc => left_right_encoder, -- switch sw1
-						 reset => reset,
-						 clk => clk,
-						 anodes => anodes,
-						 sseg => sseg
-					 );
+						on_off => '1',
+						valueToDisplay => valueToDisplay,
+						dotsOnOff => "0100",
+						reset => reset,
+						clk => clk,
+						anodes => anodes,
+						sseg => sseg
+		);
+
+		--instanciate the decoder
+		RMotorSpeed: TicksPerSecCounter 
+		port map	(
+						reset => reset,
+						clock => clk,
+						QuadA => channels_R(0),
+						QuadB => channels_R(1),
+						CountsPerSec => counter_R
+		);
+		
+		LMotorSpeed: TicksPerSecCounter 
+		port map	(
+						reset => reset,
+						clock => clk,
+						QuadA => channels_L(0),
+						QuadB => channels_L(1),
+						CountsPerSec => counter_L
+		);
+		
 		
 		--instanciate the i2c
 		cmdvelocityi2c: cmd_velocity_i2c 
@@ -129,6 +157,8 @@ begin
 	
 	ext_anodes <= anodes;
 	ext_sseg <= sseg;
+	valueToDisplay(7 DOWNTO 0) <= counter_R(7 DOWNTO 0);
+	valueToDisplay(15 DOWNTO 8) <= counter_L(7 DOWNTO 0);
 	
    next_state_logic : PROCESS(reset, clk)
 		begin
