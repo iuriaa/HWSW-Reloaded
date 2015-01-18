@@ -74,7 +74,7 @@ architecture Behavioral of cmd_velocity_i2c is
 					 data_rd   : OUT    STD_LOGIC_VECTOR(7 DOWNTO 0); --data read from slave
 					 ack_error : BUFFER STD_LOGIC;                    --flag if improper acknowledge from slave
 					 sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
-					 scl       : INOUT  STD_LOGIC                   --serial clock output of i2c bus
+					 scl       : INOUT  STD_LOGIC                     --serial clock output of i2c bus
     			);
 	end component;
 
