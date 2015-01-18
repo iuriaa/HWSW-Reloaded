@@ -13,10 +13,10 @@ NET "speed_prescalar[3]"       LOC = N17;   # Sch name = SW6
 NET "sda" LOC = T17; #JB1 pin 4
 NET "scl" LOC = R15; #JB1 pin 3
 
-NET "channels_L[0]" LOC = L17; #JA3
-NET "channels_L[1]" LOC = M15; #JA4
-NET "channels_R[0]" LOC = M14; #JA9
-NET "channels_R[1]" LOC = M16; #JA10
+NET "channels_R[0]" LOC = L17; #JA3
+NET "channels_R[1]" LOC = M15; #JA4
+NET "channels_L[0]" LOC = M14; #JA9
+NET "channels_L[1]" LOC = M16; #JA10
 #NET "leds[0]" LOC = P4; #LD7
 #NET "leds[1]" LOC = E4; #LD6
 #NET "leds[2]" LOC = P16; #LD5
