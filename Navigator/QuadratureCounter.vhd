@@ -51,7 +51,7 @@ architecture QuadratureCounter of TicksPerSecCounter is
 	
 	signal PrescaleCounter : std_logic_vector(25 downto 0) := (others =>'0');
 	
-	constant PrescalerSecond : std_logic_vector(25 downto 0) := "10111110101111000010000000"; --50_000_000
+	constant PrescalerSecond : std_logic_vector(25 downto 0) := "00001011111010111100001000";--"10111110101111000010000000"; --50_000_000
 
 	--where all the 'work' is done: quadraturedecoder.vhd
 	component QuadratureDecoderPorts
@@ -88,7 +88,7 @@ architecture QuadratureCounter of TicksPerSecCounter is
 			PrescaleCounter <= PrescaleCounter + 1;
 			if (PrescaleCounter = PrescalerSecond) then
 				PrescaleCounter <= (others => '0'); 
-				CountsPerSec <= Count;
+				CountsPerSec <= Count * ("10000");
 				Count <= (others => '0');
 			end if;
 			if (CountEnable = '1') then

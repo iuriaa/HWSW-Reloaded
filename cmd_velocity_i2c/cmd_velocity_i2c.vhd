@@ -42,7 +42,8 @@ entity cmd_velocity_i2c is
 					 speed_L	  : IN	  STD_LOGIC_VECTOR (11 DOWNTO 0);
 					 speed_R	  : IN	  STD_LOGIC_VECTOR (11 DOWNTO 0);
 					 L_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0);
-					 R_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0)
+					 R_fw_bw	  : IN	  STD_LOGIC_VECTOR(1 DOWNTO 0);
+					 cmd_vel_busy  : OUT 	  STD_LOGIC
 					);
 end cmd_velocity_i2c;
 
@@ -57,6 +58,7 @@ architecture Behavioral of cmd_velocity_i2c is
 	constant addr_motor2 : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"3A";
 	signal busy_prev : STD_LOGIC := '0';
 	signal data_rd : STD_LOGIC_VECTOR(7 DOWNTO 0);
+	signal cmd_vel_busy_temp : STD_LOGIC := '0';
 	
 	TYPE state_type IS (idle, get_data);
 	signal state : state_type := idle;
@@ -110,12 +112,14 @@ architecture Behavioral of cmd_velocity_i2c is
             data_wr <= (others => '0');
             enable <= '0';
             rw <= '1';
+				cmd_vel_busy_temp <= '0';
         elsif (clk'event and clk = '1') then
             enable <= '0';  -- default power-down
             rw <= '0';
             case state is
 					 when idle =>
 						  if (trigger = '1') then
+						      cmd_vel_busy_temp  <= '1';
 								busy_cnt := 0;                          -- reset busy_cnt for next transaction
 								case R_fw_bw is
 									when "00" =>
@@ -332,6 +336,7 @@ architecture Behavioral of cmd_velocity_i2c is
 									 data_wr <= x"00";
 								when 38 =>
 									 enable <= '0';
+									 cmd_vel_busy_temp  <= '0';
 									 if (trigger = '0') then
 											state <= idle;
 									 end if;
@@ -341,4 +346,5 @@ architecture Behavioral of cmd_velocity_i2c is
 				end case;
         end if;
     end process;
+	 cmd_vel_busy <= cmd_vel_busy_temp;
 end Behavioral;
