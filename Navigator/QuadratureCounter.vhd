@@ -17,10 +17,11 @@ use IEEE.STD_LOGIC_SIGNED.ALL;
 --How we 'talk' to the outside world:
 entity TicksPerSecCounter is
     Port ( clock : in std_logic;	--system clock, i.e. 10MHz oscillator
+		 prescaledClk : in std_logic;
    	 reset : in std_logic;	--counter reset
 		 QuadA : in std_logic;	--first input from quadrature device  (i.e. optical disk encoder)
 		 QuadB : in std_logic;	--second input from quadrature device (i.e. optical disk encoder)
-		 CountsPerSec : out std_logic_vector(15 downto 0) --just an example debuggin output
+		 CountsPerSec : out std_logic_vector(11 downto 0) --just an example debuggin output
 		);
 end TicksPerSecCounter;
 
@@ -40,18 +41,15 @@ architecture QuadratureCounter of TicksPerSecCounter is
 	--then Count would only need to be 11 downto 0, and you could count
 	--2048 ticks in either direction, regardless of the position of the 
 	--encoder at system bootup.
-	signal Count : std_logic_vector(15 downto 0);
+	signal Count : std_logic_vector(11 downto 0);
 	
+	signal prevPrescaledClk : std_logic := '0';
 	--this is the signal from the quadrature logic that it is time to change
 	--the value of the counter on this clock signal (either + or -)
 	signal CountEnable : std_logic;
 	
 	--should we increment or decrement count?
 	signal CountDirection : std_logic;
-	
-	signal PrescaleCounter : std_logic_vector(25 downto 0) := (others =>'0');
-	
-	constant PrescalerSecond : std_logic_vector(25 downto 0) := "00001011111010111100001000";--"10111110101111000010000000"; --50_000_000
 
 	--where all the 'work' is done: quadraturedecoder.vhd
 	component QuadratureDecoderPorts
@@ -85,19 +83,15 @@ architecture QuadratureCounter of TicksPerSecCounter is
 		if reset = '1' then 
 			Count <= (OTHERS => '0');
 		elsif ( (clock'event) and (clock = '1') ) then
-			PrescaleCounter <= PrescaleCounter + 1;
-			if (PrescaleCounter = PrescalerSecond) then
-				PrescaleCounter <= (others => '0'); 
-				CountsPerSec <= Count * ("10000");
+			prevPrescaledClk <= prescaledClk;
+			if (prevPrescaledClk /= prescaledClk and prescaledClk = '1') then
+				CountsPerSec <= Count;
 				Count <= (others => '0');
 			end if;
 			if (CountEnable = '1') then
-				
-				if (CountDirection = '1') then Count <= Count + "0000000000000001"; end if;
-				if (CountDirection = '0') then Count <= Count - "0000000000000001"; end if;
-
+				if (CountDirection = '1') then Count <= Count + "000000000001"; end if;
+				if (CountDirection = '0') then Count <= Count - "000000000001"; end if;
 			end if;
-
 		end if; --clock'event
 
 		--!!!!!!!!!!!INSERT SOMETHING USEFULL HERE!!!!!!!!!!!

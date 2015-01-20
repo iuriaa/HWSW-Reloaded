@@ -36,23 +36,23 @@ entity speed_controller is
     Port ( 
 	        clk : in  STD_LOGIC;
 	        reset : in  STD_LOGIC;
-	        desired_speed : in  STD_LOGIC_VECTOR (15 downto 0);
-           desired_bias : in  STD_LOGIC_VECTOR (15 downto 0);
-           actual_speed_R : in  STD_LOGIC_VECTOR (15 downto 0);
-           actual_speed_L : in  STD_LOGIC_VECTOR (15 downto 0);
+	        desired_speed : in  STD_LOGIC_VECTOR (11 downto 0);
+           desired_bias : in  STD_LOGIC_VECTOR (11 downto 0);
+           actual_speed_R : in  STD_LOGIC_VECTOR (11 downto 0);
+           actual_speed_L : in  STD_LOGIC_VECTOR (11 downto 0);
            pwm_command_R : out  STD_LOGIC_VECTOR (11 downto 0);
            pwm_command_L : out  STD_LOGIC_VECTOR (11 downto 0));
 end speed_controller;
 
 architecture Behavioral of speed_controller is
-SIGNAL error_L, error_R: STD_LOGIC_VECTOR(15 downto 0):= (OTHERS => '0');
-SIGNAL pwm_command_L_sig, pwm_command_R_sig: STD_LOGIC_VECTOR(15 downto 0):= (OTHERS => '0');
+SIGNAL error_L, error_R: STD_LOGIC_VECTOR(11 downto 0):= (OTHERS => '0');
+SIGNAL pwm_command_L_sig, pwm_command_R_sig: STD_LOGIC_VECTOR(11 downto 0):= (OTHERS => '0');
 SIGNAL inc_dec_L, inc_dec_R: STD_LOGIC := '0';
 
 component pid
 		port(
-			u_out:out std_logic_vector( 15 downto 0);
-			e_in:in std_logic_vector(15 downto 0);
+			u_out:out std_logic_vector(11 downto 0);
+			e_in:in std_logic_vector(11 downto 0);
 			clk:in std_logic;
 			reset:in std_logic;
 			inc_dec :in std_logic
@@ -95,36 +95,30 @@ begin
 --						PWM => pwm_command_L
 --			      );
 	
-	process(clk, reset)--actual_speed_R, actual_speed_L)
+	process(actual_speed_R, actual_speed_L, reset)--actual_speed_R, actual_speed_L)
 	begin
 	  if(reset = '1') then
 		error_R <= (OTHERS => '0');
 		error_L <= (OTHERS => '0');
-	  elsif clk'event and clk = '1' then
-		  if actual_speed_R < desired_speed then
+	  elsif (clk'event and clk = '1') then
+		  if actual_speed_R <= desired_speed then
 				error_R <= desired_speed - actual_speed_R;
 				inc_dec_R <= '0';
-		  elsif actual_speed_R > desired_speed then
+		  else
 				error_R <=  actual_speed_R - desired_speed;
 				inc_dec_R <= '1';
-		  else
-				error_R <= (OTHERS => '0');
-				inc_dec_R <= '0';
 		  end if;
 		  
-		  if actual_speed_L < desired_speed then
+		  if actual_speed_L <= desired_speed then
 				error_L <= desired_speed - actual_speed_L;
 				inc_dec_L <= '0';
-		  elsif actual_speed_L > desired_speed then
+		  else
 				error_L <=  actual_speed_L - desired_speed;
 				inc_dec_L <= '1';
-		  else
-				error_L <= (OTHERS => '0');
-				inc_dec_L <= '0';
 		  end if;
 	  end if;
 	end process;
-	pwm_command_R <= pwm_command_R_sig(11 downto 0);
-	pwm_command_L <= (OTHERS => '0');--pwm_command_L_sig(11 downto 0);
+	pwm_command_R <= pwm_command_R_sig;
+	pwm_command_L <= pwm_command_L_sig;
 end Behavioral;
 
