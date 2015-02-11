@@ -63,10 +63,12 @@ architecture Behavioral of navigator is
 	SIGNAL desired_bias_in: STD_LOGIC_VECTOR (11 DOWNTO 0):= x"000";
 	SIGNAL cmd_vel_busy: STD_LOGIC;
 	
-	SIGNAL oneHertzSignal : STD_LOGIC := '0';
-	SIGNAL prevOneHertzSignal : STD_LOGIC := '0';
+	SIGNAL prescaledClk : STD_LOGIC := '0';
+	SIGNAL prevPrescaledClk : STD_LOGIC := '0';
 	SIGNAL prescaleCounter: STD_LOGIC_VECTOR (25 DOWNTO 0) := (OTHERS =>'0');
-	CONSTANT prescalerSecond: STD_LOGIC_VECTOR (25 DOWNTO 0) := "01011111010111100001000000"; --25_000_000
+--	CONSTANT prescalerSecond: STD_LOGIC_VECTOR (25 DOWNTO 0) := "00000010111110101111000010"; --781_250 (15.625millisec)
+--	CONSTANT prescalerSecond: STD_LOGIC_VECTOR (25 DOWNTO 0) := "00000101111101011110000100"; --1_562_500 (31.25millisec)
+	CONSTANT prescalerSecond: STD_LOGIC_VECTOR (25 DOWNTO 0) := "00001011111010111100001000"; --3_125_000 (62.5millisec)
 
 	
 	component speed_controller
@@ -122,7 +124,7 @@ begin
 
       speed_control:speed_controller
 		port map( 
-		        clk => oneHertzSignal,
+		        clk => prescaledClk,
 		        reset => reset,
 		        desired_speed => desired_speed_in,
 				  desired_bias => desired_bias_in,
@@ -148,7 +150,7 @@ begin
 		port map	(
 						reset => reset,
 						clock => clk,
-						prescaledClk => oneHertzSignal,
+						prescaledClk => prescaledClk,
 						QuadA => channels_R(0),
 						QuadB => channels_R(1),
 						CountsPerSec => counter_R
@@ -158,7 +160,7 @@ begin
 		port map	(
 						reset => reset,
 						clock => clk,
-						prescaledClk => oneHertzSignal,
+						prescaledClk => prescaledClk,
 						QuadA => channels_L(0),
 						QuadB => channels_L(1),
 						CountsPerSec => counter_L
@@ -189,14 +191,14 @@ begin
 			elsif clk'event and clk = '1' then
 				  prescaleCounter<= prescaleCounter+ 1;
 				  current_state <= next_state;
-				  prevOneHertzSignal <= oneHertzSignal;
+				  prevPrescaledClk <= prescaledClk;
 				  if (prescaleCounter = PrescalerSecond) then
-						oneHertzSignal <= not(oneHertzSignal);
+						prescaledClk <= not(prescaledClk);
 						prescaleCounter<= (OTHERS => '0');
 				  end if;
 				  if (current_state /= next_state) then
 						trigger_cmd_vel <= '1';
-				  elsif (prevOneHertzSignal /= oneHertzSignal and oneHertzSignal = '1') then
+				  elsif (prevPrescaledClk /= prescaledClk and prescaledClk = '1') then
 						trigger_cmd_vel <= '1';
 				  else
 					   trigger_cmd_vel <= '0';
@@ -206,11 +208,8 @@ begin
 	
 	ext_anodes <= anodes;
 	ext_sseg <= sseg;
-	--valueToDisplay <= counter_R;
-	--valueToDisplay(11 DOWNTO 0) <= counter_R;
-	--valueToDisplay(15 DOWNTO 12) <= (OTHERS => '0');
-	--valueToDisplay(7 DOWNTO 0) <= speed_r(7 DOWNTO 0);
-	--valueToDisplay(11 DOWNTO 8) <= speed_r(11 DOWNTO 8);
+--	valueToDisplay(15 DOWNTO 12) <= (OTHERS => '0');
+--	valueToDisplay(11 DOWNTO 0) <= counter_R(11 DOWNTO 0);
 	valueToDisplay(7 DOWNTO 0) <= counter_R(7 DOWNTO 0);
 	valueToDisplay(15 DOWNTO 8) <= counter_L(7 DOWNTO 0);
 	
@@ -256,7 +255,7 @@ begin
 --						speed_r(11 DOWNTO 8) <= speed_prescalar;
 --						speed_l(7 DOWNTO 0) <= x"FF";
 --						speed_r(7 DOWNTO 0) <= x"FF";
-                  desired_speed_in <= x"04A";
+                  desired_speed_in <= x"0C0";
 					when backward =>
 						state_left_wheel <= "10";
 						state_right_wheel <= "10";
@@ -264,7 +263,7 @@ begin
 --						speed_r(11 DOWNTO 8) <= speed_prescalar;
 --						speed_l(7 DOWNTO 0) <= x"FF";
 --						speed_r(7 DOWNTO 0) <= x"FF";
-						desired_speed_in <= x"04A";
+						desired_speed_in <= x"0C0";
 					when rotate_R =>
 						state_left_wheel <= "01";
 						state_right_wheel <= "10";
@@ -272,7 +271,7 @@ begin
 --						speed_r(11 DOWNTO 8) <= speed_prescalar;
 --						speed_l(7 DOWNTO 0) <= x"FF";
 --						speed_r(7 DOWNTO 0) <= x"FF";
-						desired_speed_in <= x"04A";
+						desired_speed_in <= x"0C0";
 					when rotate_L =>
 						state_left_wheel <= "10";
 						state_right_wheel <= "01";
@@ -280,7 +279,7 @@ begin
 --						speed_r(11 DOWNTO 8) <= speed_prescalar;
 --						speed_l(7 DOWNTO 0) <= x"FF";
 --						speed_r(7 DOWNTO 0) <= x"FF";
-						desired_speed_in <= x"04A";
+						desired_speed_in <= x"0C0";
 				end case;
 			 end if;
 	end process;

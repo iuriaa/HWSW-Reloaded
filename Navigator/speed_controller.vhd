@@ -49,6 +49,11 @@ SIGNAL error_L, error_R: STD_LOGIC_VECTOR(11 downto 0):= (OTHERS => '0');
 SIGNAL pwm_command_L_sig, pwm_command_R_sig: STD_LOGIC_VECTOR(11 downto 0):= (OTHERS => '0');
 SIGNAL inc_dec_L, inc_dec_R: STD_LOGIC := '0';
 
+SIGNAL prescaledClk : STD_LOGIC := '0';
+SIGNAL prevPrescaledClk : STD_LOGIC := '0';
+SIGNAL prescaleCounter: STD_LOGIC_VECTOR (25 DOWNTO 0) := (OTHERS =>'0');
+CONSTANT prescalerSecond: STD_LOGIC_VECTOR (25 DOWNTO 0) := "00000000000000000000000010"; --3_125_000 (62.5millisec)
+
 component pid
 		port(
 			u_out:out std_logic_vector(11 downto 0);
@@ -70,7 +75,7 @@ begin
 		port map(
 			u_out => pwm_command_R_sig,
 			e_in => error_R,
-			clk => clk,
+			clk => prescaledClk,
 			reset => reset,
 			inc_dec => inc_dec_R
 		);
@@ -79,7 +84,7 @@ begin
 		port map(
 			u_out => pwm_command_L_sig,
 			e_in => error_L,
-			clk => clk,
+			clk => prescaledClk,
 			reset => reset,
 			inc_dec => inc_dec_L
 		);
@@ -94,27 +99,40 @@ begin
 --						e => error_L,
 --						PWM => pwm_command_L
 --			      );
+	process(clk)
+	begin
+		if (clk'event and clk = '1') then
+			prescaleCounter <= prescaleCounter+ 1;
+			if (prescaleCounter = PrescalerSecond) then
+				prescaledClk <= not(prescaledClk);
+				prescaleCounter<= (OTHERS => '0');
+			end if;
+		end if;
+	end process;
 	
-	process(actual_speed_R, actual_speed_L, reset)--actual_speed_R, actual_speed_L)
+	process(actual_speed_R, actual_speed_L, reset, clk)--actual_speed_R, actual_speed_L)
 	begin
 	  if(reset = '1') then
-		error_R <= (OTHERS => '0');
-		error_L <= (OTHERS => '0');
+		  error_R <= (OTHERS => '0');
+		  error_L <= (OTHERS => '0');
 	  elsif (clk'event and clk = '1') then
-		  if actual_speed_R <= desired_speed then
-				error_R <= desired_speed - actual_speed_R;
-				inc_dec_R <= '0';
-		  else
-				error_R <=  actual_speed_R - desired_speed;
-				inc_dec_R <= '1';
-		  end if;
+		  prevPrescaledClk <= prescaledClk;
+		  if (prevPrescaledClk /= prescaledClk and prescaledClk = '1') then
+				if actual_speed_R <= desired_speed then
+					error_R <= desired_speed - actual_speed_R;
+					inc_dec_R <= '0';
+				else
+					error_R <=  actual_speed_R - desired_speed;
+					inc_dec_R <= '1';
+				end if;
 		  
-		  if actual_speed_L <= desired_speed then
-				error_L <= desired_speed - actual_speed_L;
-				inc_dec_L <= '0';
-		  else
-				error_L <=  actual_speed_L - desired_speed;
-				inc_dec_L <= '1';
+				if actual_speed_L <= desired_speed then
+					error_L <= desired_speed - actual_speed_L;
+					inc_dec_L <= '0';
+				else
+					error_L <=  actual_speed_L - desired_speed;
+					inc_dec_L <= '1';
+				end if;
 		  end if;
 	  end if;
 	end process;

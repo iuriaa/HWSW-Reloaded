@@ -1,7 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_SIGNED.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 -- c2003 Franks Development, LLC
 -- http://www.franks-development.com
@@ -28,6 +27,11 @@ end TicksPerSecCounter;
 --What we 'do':
 architecture QuadratureCounter of TicksPerSecCounter is
 
+	--Our encoder is the 5420-es214 which has 200 ticks, ~400 counts per revolute
+	--The frequency of the prescaled clock is decided to be 16Hz (62.5 milliseconds cycles)
+	--In order to calculate the velocity, we shift the counted values by four bits to the left (1 sec),
+	--sum 4 consecutive shifted counts and shift the result by 2 bits to the right(Averaging it).
+	
 	-- local 'variables' or 'registers'
 	
 	--This is the counter for how many quadrature ticks have gone past.
@@ -41,7 +45,12 @@ architecture QuadratureCounter of TicksPerSecCounter is
 	--then Count would only need to be 11 downto 0, and you could count
 	--2048 ticks in either direction, regardless of the position of the 
 	--encoder at system bootup.
-	signal Count : std_logic_vector(11 downto 0);
+	
+	TYPE count_states IS (first_counter, second_counter, third_counter, fourth_counter); -- declaring enumeration
+	signal count_state : count_states := first_counter;
+	signal counter_one, counter_two, counter_three, counter_four : signed(11 downto 0) := (others => '0');
+	
+	signal main_counter : signed(11 downto 0);
 	
 	signal prevPrescaledClk : std_logic := '0';
 	--this is the signal from the quadrature logic that it is time to change
@@ -67,7 +76,7 @@ architecture QuadratureCounter of TicksPerSecCounter is
 	--instanciate the decoder
 	iQuadratureDecoder: QuadratureDecoderPorts 
 	port map	( 
- 				clock => clock,
+					clock => clock,
 	      		QuadA => QuadA,
  	   			QuadB => QuadB,
     				Direction => CountDirection,
@@ -76,29 +85,43 @@ architecture QuadratureCounter of TicksPerSecCounter is
 
 
 	-- do our actual work every clock cycle
-	process(clock, reset, Count)
+	process(clock, reset, main_counter)
 	begin
-
 		--keep track of the counter
 		if reset = '1' then 
-			Count <= (OTHERS => '0');
+			main_counter <= (OTHERS => '0');
+			counter_one <= (others => '0');
+			counter_two <= (others => '0');
+			counter_three <= (others => '0');
+			counter_four <= (others => '0');
 		elsif ( (clock'event) and (clock = '1') ) then
 			prevPrescaledClk <= prescaledClk;
 			if (prevPrescaledClk /= prescaledClk and prescaledClk = '1') then
-				CountsPerSec <= Count;
-				Count <= (others => '0');
+				CASE count_state IS
+					when first_counter => 
+						counter_one <= main_counter sll 4;
+						count_state <= second_counter;
+					when second_counter =>
+						counter_two <= main_counter sll 4;
+						count_state <= third_counter;
+					when third_counter =>
+						counter_three <= main_counter sll 4;
+						count_state <= fourth_counter;
+					when fourth_counter =>
+						counter_four <= main_counter sll 4;
+						count_state <= first_counter;
+					when OTHERS => 
+						NULL;
+				end case;
+				main_counter <= (others => '0');
+				CountsPerSec <= std_logic_vector((counter_one + counter_two + counter_three + counter_four) srl 2);
 			end if;
 			if (CountEnable = '1') then
-				if (CountDirection = '1') then Count <= Count + "000000000001"; end if;
-				if (CountDirection = '0') then Count <= Count - "000000000001"; end if;
+				if (CountDirection = '1') then main_counter <= main_counter + 1; end if;
+				if (CountDirection = '0') then main_counter <= main_counter - 1; end if;
 			end if;
 		end if; --clock'event
-
-		--!!!!!!!!!!!INSERT SOMETHING USEFULL HERE!!!!!!!!!!!
-		--This is where you do actual work based on the value of the counter
-		--for instance, I will just output the value of the counter
-		--led's on an output like this are very useful - you can see the top
-		--bits light when moved backwards from initial position (count goes negative)
+		
 		--CountsPerSec <= Count;
 
 	end process; --(clock)
