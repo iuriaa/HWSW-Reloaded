@@ -76,6 +76,8 @@ architecture Behavioral of navigator is
 	        reset : in  STD_LOGIC;
 	        desired_speed : in  STD_LOGIC_VECTOR (11 downto 0);
            desired_bias : in  STD_LOGIC_VECTOR (11 downto 0);
+			  desired_state_R : in  STD_LOGIC_VECTOR (1 downto 0);
+           desired_state_L : in  STD_LOGIC_VECTOR (1 downto 0);
            actual_speed_R : in  STD_LOGIC_VECTOR (11 downto 0);
            actual_speed_L : in  STD_LOGIC_VECTOR (11 downto 0);
            pwm_command_R : out  STD_LOGIC_VECTOR (11 downto 0);
@@ -128,6 +130,8 @@ begin
 		        reset => reset,
 		        desired_speed => desired_speed_in,
 				  desired_bias => desired_bias_in,
+				  desired_state_R => state_right_wheel, 
+				  desired_state_L => state_left_wheel,
 				  actual_speed_R => counter_R(11 DOWNTO 0),
 				  actual_speed_L => counter_L(11 DOWNTO 0),
 				  pwm_command_R => speed_r,
