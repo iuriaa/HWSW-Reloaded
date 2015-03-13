@@ -20,7 +20,7 @@ entity TicksPerSecCounter is
    	 reset : in std_logic;	--counter reset
 		 QuadA : in std_logic;	--first input from quadrature device  (i.e. optical disk encoder)
 		 QuadB : in std_logic;	--second input from quadrature device (i.e. optical disk encoder)
-		 CountsPerSec : out std_logic_vector(11 downto 0) --just an example debuggin output
+		 CountsPerSec : out signed(12 downto 0) --just an example debuggin output
 		);
 end TicksPerSecCounter;
 
@@ -48,9 +48,9 @@ architecture QuadratureCounter of TicksPerSecCounter is
 	
 	TYPE count_states IS (first_counter, second_counter, third_counter, fourth_counter); -- declaring enumeration
 	signal count_state : count_states := first_counter;
-	signal counter_one, counter_two, counter_three, counter_four : signed(11 downto 0) := (others => '0');
+	signal counter_one, counter_two, counter_three, counter_four : signed(12 downto 0) := (others => '0');
 	
-	signal main_counter : signed(11 downto 0);
+	signal main_counter : signed(12 downto 0);
 	
 	signal prevPrescaledClk : std_logic := '0';
 	--this is the signal from the quadrature logic that it is time to change
@@ -74,8 +74,8 @@ architecture QuadratureCounter of TicksPerSecCounter is
 	begin --architecture QuadratureCounter		 
 
 	--instanciate the decoder
-	iQuadratureDecoder: QuadratureDecoderPorts 
-	port map	( 
+	iQuadratureDecoder: QuadratureDecoderPorts
+	port map	(
 					clock => clock,
 	      		QuadA => QuadA,
  	   			QuadB => QuadB,
@@ -99,22 +99,42 @@ architecture QuadratureCounter of TicksPerSecCounter is
 			if (prevPrescaledClk /= prescaledClk and prescaledClk = '1') then
 				CASE count_state IS
 					when first_counter => 
-						counter_one <= main_counter sll 4;
+						if (counter_one >= 0) then
+							counter_one <= main_counter sll 4;
+						else
+							counter_one <= -1 * (abs(main_counter) sll 4);
+						end if;
 						count_state <= second_counter;
 					when second_counter =>
-						counter_two <= main_counter sll 4;
+						if (counter_two >= 0) then
+							counter_two <= main_counter sll 4;
+						else
+							counter_two <= -1 * (abs(main_counter) sll 4);
+						end if;
 						count_state <= third_counter;
 					when third_counter =>
-						counter_three <= main_counter sll 4;
+						if (counter_three >= 0) then
+							counter_three <= main_counter sll 4;
+						else
+							counter_three <= -1 * (abs(main_counter) sll 4);
+						end if;
 						count_state <= fourth_counter;
 					when fourth_counter =>
-						counter_four <= main_counter sll 4;
+						if (counter_four >= 0) then
+							counter_four <= main_counter sll 4;
+						else
+							counter_four <= -1 * (abs(main_counter) sll 4);
+						end if;
 						count_state <= first_counter;
 					when OTHERS => 
 						NULL;
 				end case;
 				main_counter <= (others => '0');
-				CountsPerSec <= std_logic_vector((counter_one + counter_two + counter_three + counter_four) srl 2);
+				if ((counter_one + counter_two + counter_three + counter_four) >= 0) then
+					CountsPerSec <= (counter_one + counter_two + counter_three + counter_four) srl 2;
+				else
+					CountsPerSec <= -1 * (abs(counter_one + counter_two + counter_three + counter_four) srl 2);
+				end if;
 			end if;
 			if (CountEnable = '1') then
 				if (CountDirection = '1') then main_counter <= main_counter + 1; end if;
