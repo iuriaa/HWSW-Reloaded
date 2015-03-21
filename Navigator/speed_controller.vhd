@@ -81,11 +81,11 @@ begin
 		   error_R <= (OTHERS => '0');
 		   error_L <= (OTHERS => '0');
 	  elsif (clk'event and clk = '1') then
-			if (abs(actual_speed_L) /= abs(actual_speed_R)) then
-				integral_sig <= integral_sig + abs(actual_speed_L) + desired_bias - abs(actual_speed_R);
-			else
-				integral_sig <= (OTHERS => '0');
-			end if;
+--			if (abs(actual_speed_L) /= abs(actual_speed_R)) then
+				integral_sig <= abs(actual_speed_L) - abs(actual_speed_R) + abs(desired_bias);
+--			else
+--				integral_sig <= (OTHERS => '0');
+--			end if;
 			error_R <= abs(desired_speed) - abs(actual_speed_R);
 			error_L <= abs(desired_speed) - abs(actual_speed_L);
 			integral_R <= integral_sig;
