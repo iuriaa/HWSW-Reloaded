@@ -62,6 +62,8 @@ architecture Behavioral of navigator is
 	SIGNAL desired_bias_in: SIGNED(12 DOWNTO 0):= "0000000000000";
 	SIGNAL cmd_vel_busy: STD_LOGIC;
 	
+
+	
 	SIGNAL prescaledClk : STD_LOGIC := '0';
 	SIGNAL prevPrescaledClk : STD_LOGIC := '0';
 	SIGNAL prescaleCounter: STD_LOGIC_VECTOR (25 DOWNTO 0) := (OTHERS =>'0');
@@ -122,7 +124,7 @@ architecture Behavioral of navigator is
 	end component;
 	
 begin
-
+ 
       speed_control:speed_controller
 		port map( 
 		        clk => prescaledClk,--16Hz
@@ -211,10 +213,15 @@ begin
 	
 	ext_anodes <= anodes;
 	ext_sseg <= sseg;
---	valueToDisplay(15 DOWNTO 12) <= (OTHERS => '0');
---	valueToDisplay(11 DOWNTO 0) <= counter_R(11 DOWNTO 0);
-	valueToDisplay(7 DOWNTO 0) <= STD_LOGIC_VECTOR(counter_R(7 DOWNTO 0));
-	valueToDisplay(15 DOWNTO 8) <= STD_LOGIC_VECTOR(counter_L(7 DOWNTO 0));
+	
+	process(counter_R, counter_L)
+	   variable display_temp: STD_LOGIC_VECTOR(12 downto 0) := (OTHERS => '0');
+	   begin
+			display_temp := STD_LOGIC_VECTOR(abs(counter_R));
+			valueToDisplay(7 DOWNTO 0) <= display_temp(7 DOWNTO 0);
+			display_temp := STD_LOGIC_VECTOR(abs(counter_L));
+			valueToDisplay(15 DOWNTO 8) <= display_temp(7 DOWNTO 0);
+   end process;
 	
    next_state_logic : PROCESS(reset, clk)
 		begin
@@ -258,7 +265,11 @@ begin
 --						pwm_speed_r(11 DOWNTO 8) <= speed_prescalar;
 --						pwm_speed_l(7 DOWNTO 0) <= x"FF";
 --						pwm_speed_r(7 DOWNTO 0) <= x"FF";
-                  desired_speed_in <= "0000011110000";
+                  desired_speed_in(7 DOWNTO 4) <= signed(speed_prescalar);
+						desired_speed_in(12 DOWNTO 8) <= "00000";
+						desired_speed_in(3 DOWNTO 0) <= "1111";
+						desired_bias_in <= "0000011111111";
+--                  desired_speed_in <= "0000011110000";
 					when backward =>
 						state_left_wheel <= "10";
 						state_right_wheel <= "10";
@@ -266,7 +277,11 @@ begin
 --						pwm_speed_r(11 DOWNTO 8) <= speed_prescalar;
 --						pwm_speed_l(7 DOWNTO 0) <= x"FF";
 --						pwm_speed_r(7 DOWNTO 0) <= x"FF";
-						desired_speed_in <= "0000011110000";
+                  desired_speed_in(7 DOWNTO 4) <= signed(speed_prescalar);
+						desired_speed_in(12 DOWNTO 8) <= "00000";
+						desired_speed_in(3 DOWNTO 0) <= "1111";
+						desired_bias_in <= "0000011111111";
+--						desired_speed_in <= "0000011110000";
 					when rotate_R =>
 						state_left_wheel <= "01";
 						state_right_wheel <= "10";
