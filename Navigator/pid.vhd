@@ -39,7 +39,7 @@ begin
 			else
 				error_temp := -1*(abs(e_in) srl 2);
 			end if;
-			u1 := u_prev + (k_pro*(error_temp)) + (k_integral*integral_temp);
+			u1 := u_prev + (k_pro*(error_temp)); -- + (k_integral*integral_temp);
 			u_prev := u1;
 		end if;
 		u_out <= u1;
