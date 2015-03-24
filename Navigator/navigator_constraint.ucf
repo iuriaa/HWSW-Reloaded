@@ -10,6 +10,10 @@ NET "speed_prescalar[1]"       LOC = L14;   # Sch name = SW4
 NET "speed_prescalar[2]"       LOC = L13;   # Sch name = SW5
 NET "speed_prescalar[3]"       LOC = N17;   # Sch name = SW6
 
+NET "change_display[0]"  LOC = D18;   # Sch name = SW7
+NET "change_display[1]"  LOC = E18;   # Sch name = SW7
+NET "change_display[2]"  LOC = H13;   # Sch name = SW7
+
 NET "sda" LOC = T17; #JB1 pin 4
 NET "scl" LOC = R15; #JB1 pin 3
 
@@ -33,5 +37,5 @@ NET "ext_sseg[4]" LOC = G14;
 NET "ext_sseg[5]" LOC = J17;
 NET "ext_sseg[6]" LOC = H14;
 NET "ext_sseg[7]" LOC = C17;
-NET "left_right_encoder" LOC = R17;
+#NET "left_right_encoder" LOC = R17;
 #NET "switch1" LOC = H18;
