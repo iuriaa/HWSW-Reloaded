@@ -21,7 +21,7 @@ begin
 		variable u1: signed(12 downto 0) := (OTHERS => '0');
 		variable u_prev : signed(12 downto 0) := (OTHERS => '0');
 		constant k_pro: signed(6 downto 0):="0000010";
-		constant k_integral: signed( 6 downto 0 ):="0000010";
+		constant k_integral: signed( 6 downto 0 ):="0000001";
 		--constant k2:std_logic_vector( 6 downto 0):="1101000";
 		--constant k3: std_logic_vector( 6 downto 0) :="0000010";
 	begin
@@ -39,7 +39,7 @@ begin
 			else
 				error_temp := -1*(abs(e_in) srl 2);
 			end if;
-			u1 := u_prev + (k_pro*(error_temp)); -- + (k_integral*integral_temp);
+			u1 := u_prev + (k_pro*(error_temp)) + (k_integral*integral_temp);
 			u_prev := u1;
 		end if;
 		u_out <= u1;
