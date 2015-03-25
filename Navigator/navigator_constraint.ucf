@@ -1,30 +1,44 @@
 NET "clk" LOC = B8; # Clock signal
-NET "reset" CLOCK_DEDICATED_ROUTE = FALSE;
-NET "reset" LOC = B18;
-NET "state_selector[0]"       LOC = G18;   # Sch name = SW0
-NET "state_selector[1]"       LOC = H18;   # Sch name = SW1
-NET "state_selector[2]"       LOC = K18;   # Sch name = SW2
 
-NET "speed_prescalar[0]"       LOC = K17;   # Sch name = SW3
-NET "speed_prescalar[1]"       LOC = L14;   # Sch name = SW4
-NET "speed_prescalar[2]"       LOC = L13;   # Sch name = SW5
-NET "speed_prescalar[3]"       LOC = N17;   # Sch name = SW6
+NET "switches[0]" CLOCK_DEDICATED_ROUTE = FALSE;
 
-NET "change_display[0]"  LOC = D18;   # Sch name = SW7
-NET "change_display[1]"  LOC = E18;   # Sch name = SW7
-NET "change_display[2]"  LOC = H13;   # Sch name = SW7
+NET "buttons[0]" LOC = B18;  #  Sch name = BTN0 --reset
+NET "buttons[1]"  LOC = D18;   # Sch name = BTN1 --run/stop robot plus depending upon switch 0 state
+NET "buttons[2]"  LOC = E18;   # Sch name = BTN2 --set velocity plus depending upon switch 0 state
+NET "buttons[3]"  LOC = H13;   # Sch name = BTN3 --set controller constants() plus depending upon switch 0 state
+ 
+NET "switches[0]" LOC = G18;   # Sch name = SW0 --setting (Kp(0) and Ki(1) if ) or setting (linear(0) and bias(1))
 
+# switches to input data
+NET "switches[1]" LOC = H18;   # Sch name = SW1
+NET "switches[2]" LOC = K18;   # Sch name = SW2
+NET "switches[3]" LOC = K17;   # Sch name = SW3
+NET "switches[4]" LOC = L14;   # Sch name = SW4
+NET "switches[5]" LOC = L13;   # Sch name = SW5
+NET "switches[6]" LOC = N17;   # Sch name = SW6
+NET "switches[7]" LOC = R17;   # Sch name = SW7
+
+# LEDS to display data
+NET "leds[0]" LOC = J14; #LD0
+NET "leds[1]" LOC = J15; #LD1
+NET "leds[2]" LOC = K15; #LD2
+NET "leds[3]" LOC = K14; #LD3
+NET "leds[4]" LOC = E16; #LD4
+NET "leds[5]" LOC = P16; #LD5
+NET "leds[6]" LOC = E4; #LD6
+NET "leds[7]" LOC = P4; #LD7
+
+# I2C communication
 NET "sda" LOC = T17; #JB1 pin 4
 NET "scl" LOC = R15; #JB1 pin 3
 
+# Encoder Channels
 NET "channels_R[0]" LOC = L17; #JA3
 NET "channels_R[1]" LOC = M15; #JA4
 NET "channels_L[0]" LOC = M14; #JA9
 NET "channels_L[1]" LOC = M16; #JA10
-#NET "leds[0]" LOC = P4; #LD7
-#NET "leds[1]" LOC = E4; #LD6
-#NET "leds[2]" LOC = P16; #LD5
-#NET "leds[3]" LOC = E16; #LD4
+
+# Seven Segment display 
 NET "ext_anodes[0]" LOC = F17;
 NET "ext_anodes[1]" LOC = H17;
 NET "ext_anodes[2]" LOC = C18;
@@ -37,5 +51,3 @@ NET "ext_sseg[4]" LOC = G14;
 NET "ext_sseg[5]" LOC = J17;
 NET "ext_sseg[6]" LOC = H14;
 NET "ext_sseg[7]" LOC = C17;
-#NET "left_right_encoder" LOC = R17;
-#NET "switch1" LOC = H18;
