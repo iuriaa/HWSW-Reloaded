@@ -27,8 +27,8 @@ entity speed_controller is
 	        reset : in  STD_LOGIC;
 	        desired_speed : in  SIGNED (12 downto 0);
            desired_bias : in  SIGNED (12 downto 0);
-			  desired_state_R : in  STD_LOGIC_VECTOR (1 downto 0);
-           desired_state_L : in  STD_LOGIC_VECTOR (1 downto 0);
+			  desired_state_R : out  STD_LOGIC_VECTOR (1 downto 0);
+           desired_state_L : out  STD_LOGIC_VECTOR (1 downto 0);
            actual_speed_R : in  SIGNED (12 downto 0);
            actual_speed_L : in  SIGNED (12 downto 0);
 			  integral_sum : out  SIGNED(12 downto 0);
@@ -40,6 +40,7 @@ architecture Behavioral of speed_controller is
 SIGNAL error_L, error_R, integral_sig, integral_L, integral_R: signed(12 downto 0):= (OTHERS => '0');
 
 SIGNAL pwm_command_L_sig, pwm_command_R_sig: SIGNED(12 downto 0):= (OTHERS => '0');
+SIGNAL desired_state_R_temp, desired_state_L_temp: STD_LOGIC_VECTOR(1 downto 0):= (OTHERS => '0');
 SIGNAL inc_dec_L, inc_dec_R: STD_LOGIC := '0';
 
 SIGNAL prescaledClk : STD_LOGIC := '0';
@@ -86,15 +87,42 @@ begin
 			integral_sig <= (OTHERS => '0');
 			mean_actual_velocity := (OTHERS => '0');
 	  elsif (clk'event and clk = '1') then
---			if (abs(actual_speed_L) /= abs(actual_speed_R)) then
-            mean_actual_velocity := (abs(actual_speed_L) + abs(actual_speed_R)) srl 4;
-				integral_sig <= abs(actual_speed_L) - abs(actual_speed_R) + desired_bias - (k_friction * mean_actual_velocity);
+			mean_actual_velocity := (abs(actual_speed_L) + abs(actual_speed_R)) srl 4;
+			integral_sig <= abs(actual_speed_L) - abs(actual_speed_R) + desired_bias;-- - (k_friction * mean_actual_velocity);
+
 			error_R <= abs(desired_speed) - abs(actual_speed_R);
 			error_L <= abs(desired_speed) - abs(actual_speed_L);
 			integral_R <= integral_sig;
 			integral_L <= -1 * integral_sig;
 	  end if;
 	end process;
+	
+	process(reset, pwm_command_R_sig, pwm_command_L_sig)
+	begin
+	    if reset = '1' then
+		    desired_state_R_temp <= (OTHERS => '0');
+			 desired_state_L_temp <= (OTHERS => '0');
+		 else
+			 if (pwm_command_R_sig = 0) then
+			   desired_state_R_temp <= "00";
+			 elsif (pwm_command_R_sig > 0) then
+				desired_state_R_temp <= "01";
+			 else
+			   desired_state_R_temp <= "10";
+			 end if;
+			 
+			 if (pwm_command_L_sig = 0) then
+			   desired_state_L_temp <= "00";
+			 elsif (pwm_command_L_sig > 0) then
+				desired_state_L_temp <= "01";
+			 else
+			   desired_state_L_temp <= "10";
+			 end if;
+		end if;
+	end process;
+
+	desired_state_R <= desired_state_R_temp;
+	desired_state_L <= desired_state_L_temp;
 	pwm_command_R <= STD_LOGIC_VECTOR(abs(pwm_command_R_sig));
 	pwm_command_L <= STD_LOGIC_VECTOR(abs(pwm_command_L_sig));
 	integral_sum <= integral_sig;
