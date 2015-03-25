@@ -83,9 +83,11 @@ begin
 	  if(reset = '1') then
 		   error_R <= (OTHERS => '0');
 		   error_L <= (OTHERS => '0');
+			integral_sig <= (OTHERS => '0');
+			mean_actual_velocity := (OTHERS => '0');
 	  elsif (clk'event and clk = '1') then
 --			if (abs(actual_speed_L) /= abs(actual_speed_R)) then
-            mean_actual_velocity := (abs(actual_speed_L) + abs(actual_speed_R)) srl 3;
+            mean_actual_velocity := (abs(actual_speed_L) + abs(actual_speed_R)) srl 4;
 				integral_sig <= abs(actual_speed_L) - abs(actual_speed_R) + desired_bias - (k_friction * mean_actual_velocity);
 			error_R <= abs(desired_speed) - abs(actual_speed_R);
 			error_L <= abs(desired_speed) - abs(actual_speed_L);
