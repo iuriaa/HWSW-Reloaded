@@ -36,10 +36,11 @@ entity navigator is
            reset : in  STD_LOGIC;
 			  sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
 			  scl       : INOUT  STD_LOGIC;                    --serial clock output of i2c bus
-           state_selector : in  STD_LOGIC_VECTOR (2 downto 0);
-           speed_prescalar : in  STD_LOGIC_VECTOR (3 downto 0);
-			  change_display : in  STD_LOGIC_VECTOR (2 downto 0);
-			  left_right_encoder : in  STD_LOGIC;
+           run_stop : in  STD_LOGIC;
+           speed_prescalar : in  STD_LOGIC_VECTOR (6 downto 0);
+			  desired_bias : in  STD_LOGIC_VECTOR (6 downto 0);
+			  kp_in : in  STD_LOGIC_VECTOR (6 downto 0);
+			  ki_in : in  STD_LOGIC_VECTOR (6 downto 0);
 			  channels_L : in STD_LOGIC_VECTOR (1 DOWNTO 0);
 			  channels_R : in STD_LOGIC_VECTOR (1 DOWNTO 0);
 			  ext_anodes : out STD_LOGIC_VECTOR (3 DOWNTO 0);
@@ -55,16 +56,15 @@ architecture Behavioral of navigator is
 	CONSTANT MAX_SPEED : STD_LOGIC_VECTOR(11 downto 0):= x"7FF";
 	SIGNAL state_left_wheel, state_right_wheel : STD_LOGIC_VECTOR(1 downto 0):= (OTHERS => '0');
 	SIGNAL trigger_cmd_vel : STD_LOGIC:= '0';
+	SIGNAL runstop_prev :  STD_LOGIC:= '0';
 	SIGNAL anodes : STD_LOGIC_VECTOR (3 DOWNTO 0);
 	SIGNAL sseg : STD_LOGIC_VECTOR (7 DOWNTO 0);
 	SIGNAL valueToDisplay : STD_LOGIC_VECTOR (15 DOWNTO 0) := (OTHERS => '0');
 	SIGNAL counter_L, counter_R : SIGNED(12 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL desired_speed_in: SIGNED(12 DOWNTO 0):= "0000000000000";
-	SIGNAL desired_bias_in: SIGNED(12 DOWNTO 0):= "0000000000000";
-	SIGNAL integral_sum: SIGNED(12 DOWNTO 0):= "0000000000000";
+	SIGNAL desired_speed_in: SIGNED(12 DOWNTO 0):= (OTHERS => '0');
+	SIGNAL desired_bias_in: SIGNED(12 DOWNTO 0):= (OTHERS => '0');
+	SIGNAL integral_sum: SIGNED(12 DOWNTO 0):= (OTHERS => '0');
 	SIGNAL cmd_vel_busy: STD_LOGIC;
-	
-
 	
 	SIGNAL prescaledClk : STD_LOGIC := '0';
 	SIGNAL prevPrescaledClk : STD_LOGIC := '0';
@@ -79,8 +79,8 @@ architecture Behavioral of navigator is
 	        reset : in  STD_LOGIC;
 	        desired_speed : in  SIGNED (12 downto 0);
            desired_bias : in  SIGNED (12 downto 0);
-			  desired_state_R : in  STD_LOGIC_VECTOR (1 downto 0);
-           desired_state_L : in  STD_LOGIC_VECTOR (1 downto 0);
+			  desired_state_R : out  STD_LOGIC_VECTOR (1 downto 0);
+           desired_state_L : out  STD_LOGIC_VECTOR (1 downto 0);
            actual_speed_R : in  SIGNED (12 downto 0);
            actual_speed_L : in  SIGNED (12 downto 0);
 			  integral_sum : out  SIGNED(12 downto 0);
@@ -195,17 +195,18 @@ begin
    current_state_logic : PROCESS(reset, clk)
 		begin
 			if reset = '1' then
-				  current_state <= stop;
 				  trigger_cmd_vel <= '0';
 			elsif clk'event and clk = '1' then
 				  prescaleCounter<= prescaleCounter+ 1;
-				  current_state <= next_state;
+				  runstop_prev <= run_stop;
+				  
 				  prevPrescaledClk <= prescaledClk;
 				  if (prescaleCounter = PrescalerSecond) then
 						prescaledClk <= not(prescaledClk);
 						prescaleCounter<= (OTHERS => '0');
 				  end if;
-				  if (current_state /= next_state) then
+				  
+				  if (runstop_prev /= run_stop) then
 						trigger_cmd_vel <= '1';
 				  elsif (prevPrescaledClk /= prescaledClk and prescaledClk = '1') then
 						trigger_cmd_vel <= '1';
@@ -218,113 +219,35 @@ begin
 	ext_anodes <= anodes;
 	ext_sseg <= sseg;
 	
-	process(counter_R, counter_L, change_display)
+	process(counter_R, counter_L)
 	   variable display_temp: STD_LOGIC_VECTOR(12 downto 0) := (OTHERS => '0');
 	   begin
-		  CASE change_display IS
-				 when "001" =>  -- display only actual value of right wheel ticks/sec
-						display_temp := STD_LOGIC_VECTOR(abs(counter_R));
-						valueToDisplay(12 DOWNTO 0) <= display_temp;
-						valueToDisplay(15 DOWNTO 13) <= "000";
-				 when "010" =>  -- display only actual value of left wheel ticks/sec
-						display_temp := STD_LOGIC_VECTOR(abs(counter_L));
-						valueToDisplay(12 DOWNTO 0) <= display_temp;
-						valueToDisplay(15 DOWNTO 13) <= "000";
-		       when "100" =>  -- displays integral sum value
-						display_temp := STD_LOGIC_VECTOR(integral_sum);
-						valueToDisplay(12 DOWNTO 0) <= display_temp;
-						valueToDisplay(15 DOWNTO 13) <= "000";
-				 when OTHERS => -- displays actual value of ticks/sec for both wheels
-				      display_temp := STD_LOGIC_VECTOR(abs(counter_R));
-						valueToDisplay(7 DOWNTO 0) <= display_temp(7 DOWNTO 0);
-						display_temp := STD_LOGIC_VECTOR(abs(counter_L));
-						valueToDisplay(15 DOWNTO 8) <= display_temp(7 DOWNTO 0);
-		  end case;
+				display_temp := STD_LOGIC_VECTOR(abs(counter_R));
+				valueToDisplay(7 DOWNTO 0) <= display_temp(7 DOWNTO 0);
+				display_temp := STD_LOGIC_VECTOR(abs(counter_L));
+				valueToDisplay(15 DOWNTO 8) <= display_temp(7 DOWNTO 0);
    end process;
 
---   process(integral_sum)
---	   variable display_temp: STD_LOGIC_VECTOR(12 downto 0) := (OTHERS => '0');
---	   begin
---			display_temp := STD_LOGIC_VECTOR(abs(integral_sum));
---			valueToDisplay(12 DOWNTO 0) <= display_temp;
---			valueToDisplay(15 DOWNTO 13) <= "000";
---   end process;
-	
-   next_state_logic : PROCESS(reset, clk)
+	states : process(reset, run_stop)
+	   variable desired_bias_temp: signed(6 downto 0) := (OTHERS => '0');
 		begin
 			if reset = '1' then
-				  next_state <= stop;
-			elsif clk'event and clk = '1' then
-				CASE state_selector IS
-					when "100" => 
-						next_state <= forward;
-					when "101" => 
-						next_state <= backward;
-					when "110" => 
-						next_state <= rotate_R;
-					when "111" => 
-						next_state <= rotate_L;
-					when OTHERS => 
-						next_state <= stop;
-				end case;
-			end if;
-	end process;
-	
-	states : process(reset, current_state)
-		begin
-			if reset = '1' then
---				pwm_speed_l <= (OTHERS => '0');
---				pwm_speed_r <= (OTHERS => '0');
-				state_left_wheel <= "00";
-				state_right_wheel <= "00";
+				desired_speed_in <= (OTHERS => '0');
+				desired_bias_in <= (OTHERS => '0');
 			else
---				pwm_speed_l <= (OTHERS => '0');
---				pwm_speed_r <= (OTHERS => '0');
-				case current_state is
-					when stop =>
-						state_left_wheel <= "00";
-						state_right_wheel <= "00";
-						desired_speed_in <= "0000000000000";
-					when forward =>
-						state_left_wheel <= "01";
-						state_right_wheel <= "01";
---						pwm_speed_l(11 DOWNTO 8) <= speed_prescalar;
---						pwm_speed_r(11 DOWNTO 8) <= speed_prescalar;
---						pwm_speed_l(7 DOWNTO 0) <= x"FF";
---						pwm_speed_r(7 DOWNTO 0) <= x"FF";
-                  desired_speed_in(9 DOWNTO 6) <= signed(speed_prescalar);
-						desired_speed_in(12 DOWNTO 10) <= "000";
+				case run_stop is
+					when '0' =>
+						desired_speed_in <= (OTHERS => '0');
+						desired_bias_in <= (OTHERS => '0');
+					when '1' =>
+                  desired_speed_in(12 DOWNTO 6) <= signed(speed_prescalar);
 						desired_speed_in(5 DOWNTO 0) <= "111111";
---						desired_bias_in <= -1*"0000011111111";
---                  desired_speed_in <= "0000011110000";
-					when backward =>
-						state_left_wheel <= "10";
-						state_right_wheel <= "10";
---						pwm_speed_l(11 DOWNTO 8) <= speed_prescalar;
---						pwm_speed_r(11 DOWNTO 8) <= speed_prescalar;
---						pwm_speed_l(7 DOWNTO 0) <= x"FF";
---						pwm_speed_r(7 DOWNTO 0) <= x"FF";
-                  desired_speed_in(9 DOWNTO 6) <= signed(speed_prescalar);
-						desired_speed_in(12 DOWNTO 10) <= "000";
-						desired_speed_in(5 DOWNTO 0) <= "111111";
---						desired_bias_in <= -1*"0000011111111";
---						desired_speed_in <= "0000011110000";
-					when rotate_R =>
-						state_left_wheel <= "01";
-						state_right_wheel <= "10";
---						pwm_speed_l(11 DOWNTO 8) <= speed_prescalar;
---						pwm_speed_r(11 DOWNTO 8) <= speed_prescalar;
---						pwm_speed_l(7 DOWNTO 0) <= x"FF";
---						pwm_speed_r(7 DOWNTO 0) <= x"FF";
-						desired_speed_in <= "0000011110000";
-					when rotate_L =>
-						state_left_wheel <= "10";
-						state_right_wheel <= "01";
---						pwm_speed_l(11 DOWNTO 8) <= speed_prescalar;
---						pwm_speed_r(11 DOWNTO 8) <= speed_prescalar;
---						pwm_speed_l(7 DOWNTO 0) <= x"FF";
---						pwm_speed_r(7 DOWNTO 0) <= x"FF";
-						desired_speed_in <= "0000011110000";
+						
+						desired_bias_temp := signed(desired_bias);
+						desired_bias_in(12) <= desired_bias_temp(6);
+						desired_bias_in(11 DOWNTO 6) <= "000000";
+						desired_bias_in(5 DOWNTO 0) <= desired_bias_temp(5 DOWNTO 0);
+				   when OTHERS => NULL;
 				end case;
 			 end if;
 	end process;
