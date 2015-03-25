@@ -27,6 +27,8 @@ begin
 	begin
 	   if reset ='1' then
 			u_prev := (OTHERS => '0');
+			integral_temp := (OTHERS => '0');
+			error_temp := (OTHERS => '0');
 		elsif (clk'event and clk = '1') then
 		   if(integral >= 0) then
 				integral_temp := (abs(integral) srl 2);
