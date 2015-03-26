@@ -1,11 +1,9 @@
 NET "clk" LOC = B8; # Clock signal
 
-NET "switches[0]" CLOCK_DEDICATED_ROUTE = FALSE;
-
-NET "buttons[0]" LOC = B18;  #  Sch name = BTN0 --reset
-NET "buttons[1]"  LOC = D18;   # Sch name = BTN1 --run/stop robot plus depending upon switch 0 state
-NET "buttons[2]"  LOC = E18;   # Sch name = BTN2 --set velocity plus depending upon switch 0 state
-NET "buttons[3]"  LOC = H13;   # Sch name = BTN3 --set controller constants() plus depending upon switch 0 state
+NET "push_buttons[0]" LOC = B18;  #  Sch name = BTN0 --reset
+NET "push_buttons[1]"  LOC = D18;   # Sch name = BTN1 --run/stop robot plus depending upon switch 0 state
+NET "push_buttons[2]"  LOC = E18;   # Sch name = BTN2 --set velocity plus depending upon switch 0 state
+NET "push_buttons[3]"  LOC = H13;   # Sch name = BTN3 --set controller constants() plus depending upon switch 0 state
  
 NET "switches[0]" LOC = G18;   # Sch name = SW0 --setting (Kp(0) and Ki(1) if ) or setting (linear(0) and bias(1))
 
