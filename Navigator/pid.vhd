@@ -7,6 +7,8 @@ entity pid is
 			u_out:out signed(12 downto 0);
 			e_in:in signed(12 downto 0);
 			integral: in signed(12 downto 0);
+			kp_in : in  STD_LOGIC_VECTOR (6 downto 0);
+			ki_in : in  STD_LOGIC_VECTOR (6 downto 0);
 			clk:in std_logic;
 			reset:in std_logic
 		);
@@ -20,11 +22,11 @@ begin
 		variable integral_temp: signed(12 downto 0) := (OTHERS => '0');
 		variable u1: signed(12 downto 0) := (OTHERS => '0');
 		variable u_prev : signed(12 downto 0) := (OTHERS => '0');
-		constant k_pro: signed(6 downto 0):="0000010";
-		constant k_integral: signed( 6 downto 0 ):="0000001";
-		--constant k2:std_logic_vector( 6 downto 0):="1101000";
-		--constant k3: std_logic_vector( 6 downto 0) :="0000010";
+		variable k_pro: signed(6 downto 0):="0000010";
+		variable k_integral: signed( 6 downto 0 ):="0000001";
 	begin
+		k_pro := signed(kp_in);
+		k_integral := signed(ki_in);
 	   if reset ='1' then
 			u_prev := (OTHERS => '0');
 			integral_temp := (OTHERS => '0');

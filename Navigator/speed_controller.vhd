@@ -31,6 +31,8 @@ entity speed_controller is
            desired_state_L : out  STD_LOGIC_VECTOR (1 downto 0);
            actual_speed_R : in  SIGNED (12 downto 0);
            actual_speed_L : in  SIGNED (12 downto 0);
+			  kp_in : in  STD_LOGIC_VECTOR (6 downto 0);
+			  ki_in : in  STD_LOGIC_VECTOR (6 downto 0);
 			  integral_sum : out  SIGNED(12 downto 0);
            pwm_command_R : out  STD_LOGIC_VECTOR (11 downto 0);
            pwm_command_L : out  STD_LOGIC_VECTOR (11 downto 0));
@@ -53,6 +55,8 @@ component pid
 			u_out:out signed(12 downto 0);
 			e_in:in signed(12 downto 0);
 			integral: in signed(12 downto 0);
+			kp_in : in  STD_LOGIC_VECTOR (6 downto 0);
+			ki_in : in  STD_LOGIC_VECTOR (6 downto 0);
 			clk:in std_logic;
 			reset:in std_logic
 		);
@@ -64,6 +68,8 @@ begin
 			u_out => pwm_command_R_sig,
 			e_in => error_R,
 			integral => integral_R,
+			kp_in => kp_in,
+			ki_in => ki_in,
 			clk => clk,
 			reset => reset
 		);
@@ -73,23 +79,20 @@ begin
 			u_out => pwm_command_L_sig,
 			e_in => error_L,
 			integral => integral_L,
+		   kp_in => kp_in,
+		   ki_in => ki_in,
 			clk => clk,
 			reset => reset
 		);
 		
 	process(actual_speed_R, actual_speed_L, reset, clk)--actual_speed_R, actual_speed_L)
-	constant k_friction: signed(6 downto 0):="0000001";
-	variable mean_actual_velocity: signed(12 downto 0) := (OTHERS => '0');
 	begin
 	  if(reset = '1') then
 		   error_R <= (OTHERS => '0');
 		   error_L <= (OTHERS => '0');
 			integral_sig <= (OTHERS => '0');
-			mean_actual_velocity := (OTHERS => '0');
 	  elsif (clk'event and clk = '1') then
-			mean_actual_velocity := (abs(actual_speed_L) + abs(actual_speed_R)) srl 4;
-			integral_sig <= abs(actual_speed_L) - abs(actual_speed_R) + desired_bias;-- - (k_friction * mean_actual_velocity);
-
+			integral_sig <= abs(actual_speed_L) - abs(actual_speed_R) + desired_bias;
 			error_R <= abs(desired_speed) - abs(actual_speed_R);
 			error_L <= abs(desired_speed) - abs(actual_speed_L);
 			integral_R <= integral_sig;

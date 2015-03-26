@@ -81,6 +81,8 @@ architecture Behavioral of navigator is
            desired_bias : in  SIGNED (12 downto 0);
 			  desired_state_R : out  STD_LOGIC_VECTOR (1 downto 0);
            desired_state_L : out  STD_LOGIC_VECTOR (1 downto 0);
+			  kp_in : in  STD_LOGIC_VECTOR (6 downto 0);
+			  ki_in : in  STD_LOGIC_VECTOR (6 downto 0);
            actual_speed_R : in  SIGNED (12 downto 0);
            actual_speed_L : in  SIGNED (12 downto 0);
 			  integral_sum : out  SIGNED(12 downto 0);
@@ -136,6 +138,8 @@ begin
 				  desired_bias => desired_bias_in,
 				  desired_state_R => state_right_wheel, 
 				  desired_state_L => state_left_wheel,
+				  kp_in => kp_in,
+				  ki_in => ki_in,
 				  actual_speed_R => counter_R,
 				  actual_speed_L => counter_L,
 				  integral_sum => integral_sum,
@@ -193,26 +197,40 @@ begin
 					);
 
    current_state_logic : PROCESS(reset, clk)
+	   variable desired_bias_temp: signed(6 downto 0) := (OTHERS => '0');
 		begin
 			if reset = '1' then
-				  trigger_cmd_vel <= '0';
+				desired_speed_in <= (OTHERS => '0');
+				desired_bias_in <= (OTHERS => '0');
 			elsif clk'event and clk = '1' then
-				  prescaleCounter<= prescaleCounter+ 1;
-				  runstop_prev <= run_stop;
+				prescaleCounter<= prescaleCounter+ 1;
+				runstop_prev <= run_stop;
+				prevPrescaledClk <= prescaledClk;
+				if (prescaleCounter = PrescalerSecond) then
+					prescaledClk <= not(prescaledClk);
+					prescaleCounter<= (OTHERS => '0');
+				end if;
 				  
-				  prevPrescaledClk <= prescaledClk;
-				  if (prescaleCounter = PrescalerSecond) then
-						prescaledClk <= not(prescaledClk);
-						prescaleCounter<= (OTHERS => '0');
-				  end if;
-				  
-				  if (runstop_prev /= run_stop) then
-						trigger_cmd_vel <= '1';
-				  elsif (prevPrescaledClk /= prescaledClk and prescaledClk = '1') then
-						trigger_cmd_vel <= '1';
-				  else
-					   trigger_cmd_vel <= '0';
-              end if;
+				if (runstop_prev /= run_stop) then
+					trigger_cmd_vel <= '1';
+					case run_stop is
+						when '0' =>
+							desired_speed_in <= (OTHERS => '0');
+							desired_bias_in <= (OTHERS => '0');
+						when '1' =>
+							desired_speed_in(12 DOWNTO 6) <= signed(speed_prescalar);
+							desired_speed_in(5 DOWNTO 0) <= "111111";
+							desired_bias_temp := signed(desired_bias);
+							desired_bias_in(12) <= desired_bias_temp(6);
+							desired_bias_in(11 DOWNTO 6) <= "000000";
+							desired_bias_in(5 DOWNTO 0) <= desired_bias_temp(5 DOWNTO 0);
+						when others => NULL;
+					end case;
+				elsif (prevPrescaledClk /= prescaledClk and prescaledClk = '1') then
+					trigger_cmd_vel <= '1';
+				else
+					trigger_cmd_vel <= '0';
+				end if;
 			end if;
 	end process;
 	
@@ -228,28 +246,5 @@ begin
 				valueToDisplay(15 DOWNTO 8) <= display_temp(7 DOWNTO 0);
    end process;
 
-	states : process(reset, run_stop)
-	   variable desired_bias_temp: signed(6 downto 0) := (OTHERS => '0');
-		begin
-			if reset = '1' then
-				desired_speed_in <= (OTHERS => '0');
-				desired_bias_in <= (OTHERS => '0');
-			else
-				case run_stop is
-					when '0' =>
-						desired_speed_in <= (OTHERS => '0');
-						desired_bias_in <= (OTHERS => '0');
-					when '1' =>
-                  desired_speed_in(12 DOWNTO 6) <= signed(speed_prescalar);
-						desired_speed_in(5 DOWNTO 0) <= "111111";
-						
-						desired_bias_temp := signed(desired_bias);
-						desired_bias_in(12) <= desired_bias_temp(6);
-						desired_bias_in(11 DOWNTO 6) <= "000000";
-						desired_bias_in(5 DOWNTO 0) <= desired_bias_temp(5 DOWNTO 0);
-				   when OTHERS => NULL;
-				end case;
-			 end if;
-	end process;
 end Behavioral;
 

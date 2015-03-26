@@ -31,11 +31,12 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity navigator_control is
 	Port (  clk : in  STD_LOGIC;
-           reset : in  STD_LOGIC;
 			  sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
 			  scl       : INOUT  STD_LOGIC;                    --serial clock output of i2c bus
            switches : in STD_LOGIC_VECTOR (7 DOWNTO 0);
 			  leds : out STD_LOGIC_VECTOR (7 DOWNTO 0);
+			  channels_L : in STD_LOGIC_VECTOR (1 DOWNTO 0);
+			  channels_R : in STD_LOGIC_VECTOR (1 DOWNTO 0);
 			  push_buttons : in STD_LOGIC_VECTOR (3 DOWNTO 0);
 			  ext_anodes : out STD_LOGIC_VECTOR (3 DOWNTO 0);
 			  ext_sseg : out STD_LOGIC_VECTOR (7 DOWNTO 0)
@@ -67,7 +68,7 @@ architecture Behavioral of navigator_control is
 			  );
    end component;
 begin
-   navigator : navigator
+   navigator_process : navigator
 		port map( 
 		        clk => clk,
 		        reset => reset,
@@ -83,40 +84,39 @@ begin
 				  ext_anodes => ext_anodes,
 				  ext_sseg => ext_sseg
 		);
-
-	reset <= push_button(0);
-	process (reset, clk)
-		begin
-		   if reset = '1' then
-				 
-			elsif clk'event and clk = '1' then
-				 
-			end if;
-	end process;
+	reset <= push_buttons(0);
+	leds(7 downto 4) <= push_buttons;
+	leds(3) <= '0';
+	leds(0) <= run_stop;
 	
-	process (push_buttons(2 downto 0), switches(0))
+	process (clk)
 		begin
-			push_buttons_prev <= push_buttons;
-			if (switches(0) = '1') then
-				--stop
-				run_stop <= '0';
-			end if;
-			if (push_buttons_prev /= push_buttons) then
-				case push_buttons is
-					when "0010" =>  --run/stop button
-						if (switches(0) = '0') then
+			if(clk'event and clk = '1') then
+				if (switches(0) = '1') then
+					--stop
+					run_stop <= '0';
+				end if;
+				
+				if (push_buttons_prev /= push_buttons and push_buttons(0) = '1') then
+					leds(2 downto 1) <= "00";
+					kp_in <= "0000010";
+					ki_in <= "0000001";
+				elsif (push_buttons_prev /= push_buttons and push_buttons(1) = '1') then
+					if (switches(0) = '0') then
 							--run
 							run_stop <= '1';
-						end if;
-					when "0100" =>  --desired velocity/bias button
+					end if;
+				elsif (push_buttons_prev /= push_buttons and push_buttons(2) = '1') then  --desired velocity/bias button
 						if (switches(0) = '0') then
 							--set velocity
+							leds(1) <= '1';
 							speed_prescalar <= switches(7 downto 1);
 						else
 							--set bias
+							leds(2) <= '1';
 							desired_bias <= switches(7 downto 1);
 						end if;
-					when "1000" =>  --desired Kp/Ki button
+				elsif (push_buttons_prev /= push_buttons and push_buttons(3) = '1') then  --desired Kp/Ki button
 						if (switches(0) = '0') then
 							--set Kp
 							kp_in <= switches(7 downto 1);
@@ -124,8 +124,8 @@ begin
 							--set Ki
 							ki_in <= switches(7 downto 1);
 						end if;
-					when others =>  NULL;
-				end case;
+				end if;
+				push_buttons_prev <= push_buttons;
 			end if;
 	end process;
 end Behavioral;
