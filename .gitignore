@@ -6,6 +6,9 @@
 !*.vhd
 !*.ucf
 !*.bit
+!*.jpeg
+!*.png
+!*.pdf
 
 # ...even if they are in subdirectories
 !*/
